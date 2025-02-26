@@ -15,7 +15,7 @@ inner_ring_points = np.stack(
 
 # Create outer ring
 outer_angles = rng.uniform(0, 2 * np.pi, size=100)
-outer_radii = rng.uniform(1.5, 2, size=100)
+outer_radii = rng.uniform(3, 4, size=100)
 
 outer_ring_points = np.stack(
     [outer_radii * np.cos(outer_angles), outer_radii * np.sin(outer_angles)]
