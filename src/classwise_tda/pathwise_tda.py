@@ -14,51 +14,6 @@ def powerset(iterable) -> chain:
     return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
 
 
-def step_func_path_complex(
-    base_complex: gudhi.SimplexTree,
-    union_complex: gudhi.SimplexTree,
-    alpha: float,
-    verbose: bool = False,
-) -> gudhi.SimplexTree:
-    """Computes filtered simplicial complex for path stepping at filtration value alpha
-
-    Arguments
-    ----------
-    base_complex : gudhi.SimplexTree
-    Filtered simplicial complex for the starting class.
-
-    union_complex : gudhi.SimplexTree
-    Filtered simplicial complex for the union of the starting class (base_complex) with
-    some other class.
-
-    alpha : float
-    Filtration value at which to step from computing PH along base_complex to computing
-    along union_complex.
-
-    verbose : bool
-    Whether or not to print how many simplices were inserted in the union operation.
-    Default False.
-
-    Returns
-    ----------
-    gudhi.SimplexTree
-    Filtered simplicial complex for the path traveling along base_complex up to alpha
-    and along union_complex after alpha.
-    """
-
-    path_complex = base_complex.copy()
-    simplices_inserted = 0
-    for simplex, filt_val in union_complex.get_filtration():
-        if filt_val < alpha:
-            filt_val = alpha
-        simplices_inserted += path_complex.insert(simplex, filt_val)
-
-    if verbose:
-        print(f"{simplices_inserted} simplices inserted")
-
-    return path_complex
-
-
 def create_classwise_complexes(
     data_points: np.ndarray,
     class_slices: dict[str, slice],
@@ -108,3 +63,48 @@ def create_classwise_complexes(
         class_simplex.expansion(max_dim)
         classwise_complexes[class_name] = class_simplex
     return classwise_complexes
+
+
+def step_func_path_complex(
+    base_complex: gudhi.SimplexTree,
+    union_complex: gudhi.SimplexTree,
+    alpha: float,
+    verbose: bool = False,
+) -> gudhi.SimplexTree:
+    """Computes filtered simplicial complex for path stepping at filtration value alpha
+
+    Arguments
+    ----------
+    base_complex : gudhi.SimplexTree
+    Filtered simplicial complex for the starting class.
+
+    union_complex : gudhi.SimplexTree
+    Filtered simplicial complex for the union of the starting class (base_complex) with
+    some other class.
+
+    alpha : float
+    Filtration value at which to step from computing PH along base_complex to computing
+    along union_complex.
+
+    verbose : bool
+    Whether or not to print how many simplices were inserted in the union operation.
+    Default False.
+
+    Returns
+    ----------
+    gudhi.SimplexTree
+    Filtered simplicial complex for the path traveling along base_complex up to alpha
+    and along union_complex after alpha.
+    """
+
+    path_complex = base_complex.copy()
+    simplices_inserted = 0
+    for simplex, filt_val in union_complex.get_filtration():
+        if filt_val < alpha:
+            filt_val = alpha
+        simplices_inserted += path_complex.insert(simplex, filt_val)
+
+    if verbose:
+        print(f"{simplices_inserted} simplices inserted")
+
+    return path_complex
