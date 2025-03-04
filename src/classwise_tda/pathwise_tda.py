@@ -44,23 +44,30 @@ def create_classwise_complexes(
     """
 
     # Set up
+    if len(data_points.shape) != 2:
+        raise ValueError("data_points must be an (m, n) array.")
     if max_dim is None:
         max_dim = data_points.shape[1]
     distance_matrix = cdist(data_points, data_points)
+    # Compute data radius so we can ignore infinite-length edges
+    data_radius = distance_matrix.max()
     class_combos = powerset(class_slices.keys())
     classwise_complexes = dict()
 
     # Iterate through combinations of classes
     for class_combo in class_combos:
         class_name = "_U_".join(class_combo)
-        class_distances = np.full(distance_matrix.shape, np.inf, dtype=float)
-        for this_class in class_combo:
+        class_distances = distance_matrix.copy()
+        missing_classes = [a for a in class_slices.keys() if a not in class_combo]
+        for this_class in missing_classes:
             this_slice = class_slices[this_class]
-            class_distances[this_slice, this_slice] = distance_matrix[
-                this_slice, this_slice
-            ]
-        class_simplex = gudhi.SimplexTree.create_from_array(class_distances)
-        class_simplex.expansion(max_dim)
+            class_distances[this_slice, :] = np.inf
+            class_distances[:, this_slice] = np.inf
+        # We use max_filtration to ignore the inf-length edges in the distance matrix
+        class_simplex = gudhi.SimplexTree.create_from_array(
+            class_distances, max_filtration=data_radius
+        )
+        class_simplex.expansion(max_dim)  # type: ignore
         classwise_complexes[class_name] = class_simplex
     return classwise_complexes
 
