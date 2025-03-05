@@ -76,7 +76,6 @@ def step_func_path_complex(
     base_complex: gudhi.SimplexTree,
     union_complex: gudhi.SimplexTree,
     alpha: float,
-    verbose: bool = False,
 ) -> gudhi.SimplexTree:
     """Computes filtered simplicial complex for path stepping at filtration value alpha
 
@@ -93,25 +92,19 @@ def step_func_path_complex(
     Filtration value at which to step from computing PH along base_complex to computing
     along union_complex.
 
-    verbose : bool
-    Whether or not to print how many simplices were inserted in the union operation.
-    Default False.
-
     Returns
     ----------
     gudhi.SimplexTree
     Filtered simplicial complex for the path traveling along base_complex up to alpha
-    and along union_complex after alpha.
+    and along union_complex after alpha. Note that only simplices from union_complex
+    with finite filtration values will be inserted.
     """
 
     path_complex = base_complex.copy()
-    simplices_inserted = 0
     for simplex, filt_val in union_complex.get_filtration():
         if filt_val < alpha:
             filt_val = alpha
-        simplices_inserted += path_complex.insert(simplex, filt_val)
-
-    if verbose:
-        print(f"{simplices_inserted} simplices inserted")
+        if np.isfinite(filt_val):
+            _ = path_complex.insert(simplex, filt_val)
 
     return path_complex
