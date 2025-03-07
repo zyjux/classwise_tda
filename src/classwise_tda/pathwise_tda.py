@@ -108,3 +108,59 @@ def step_func_path_complex(
             _ = path_complex.insert(simplex, filt_val)
 
     return path_complex
+
+
+def arbitrary_path(
+    list_of_complexes: list[gudhi.SimplexTree], list_of_steps: list[float]
+) -> gudhi.SimplexTree:
+    """Computes filtered simplicial complex for an arbitrary path of complexes
+
+    Arguments
+    ---
+    list_of_complexes : list of gudhi.SimplexTree
+    List of filtered simplicial complexes to pass through in order.
+
+    list_of_steps : list of floats
+    List of filtration values at which to step between complexes. Must be increasing.
+
+    Returns
+    ---
+    gudhi.SimplexTree : Filtered simplicial complex representing starting in
+    list_of_complexes[0], stepping to list_of_complexes[1] at filtration value
+    list_of_steps[0], and so forth until ending in list_of_complexes[-1].
+    """
+
+    if len(list_of_steps) != len(list_of_complexes) - 1:
+        raise ValueError(
+            "List of complexes must be 1 longer than list of steps: "
+            f"got {len(list_of_complexes)} and {len(list_of_steps)}."
+        )
+
+    if list_of_steps != sorted(list_of_steps):
+        raise ValueError("List of steps must be increasing.")
+
+    path_complex = list_of_complexes[0]
+    for i, alpha in enumerate(list_of_steps):
+        path_complex = step_func_path_complex(
+            path_complex, list_of_complexes[i + 1], alpha
+        )
+    return path_complex
+
+
+def extract_filt_values_from_persistence(simplicial_complex: gudhi.SimplexTree):
+    """Extract all unique filtration values that are a birth or death value"""
+    max_dim = simplicial_complex.upper_bound_dimension()
+    if not simplicial_complex._is_persistence_defined():
+        simplicial_complex.compute_persistence()
+    for i in range(max_dim + 1):
+        try:
+            birth_death_array = np.concatenate(
+                [
+                    birth_death_array,
+                    simplicial_complex.persistence_intervals_in_dimension(i),
+                ],
+                axis=0,
+            )
+        except NameError:
+            birth_death_array = simplicial_complex.persistence_intervals_in_dimension(i)
+    return np.unique(birth_death_array)

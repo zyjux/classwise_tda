@@ -184,7 +184,7 @@ class Test_create_classwise_complexes(unittest.TestCase):
         self.assertTrue(fake_result_complex.__eq__(result["A_U_B"]))
 
 
-class test_step_func_path_complex(unittest.TestCase):
+class Test_step_func_path_complex(unittest.TestCase):
     def test_InfiniteAlpha_ReturnBaseComplex(self):
         fake_base_complex = create_fake_class_A()
         fake_union_complex = create_fake_union_class()
@@ -221,3 +221,76 @@ class test_step_func_path_complex(unittest.TestCase):
         self.assertListEqual(
             list(mock_result_complex.get_filtration()), list(result.get_filtration())
         )
+
+
+class Test_arbitrary_path(unittest.TestCase):
+    def test_ListOfStepsNotIncreasing_RaiseValueError(self):
+        fake_complex_A = create_fake_class_A()
+        fake_list_of_complexes = [fake_complex_A, fake_complex_A, fake_complex_A]
+        fake_list_of_steps = [1.0, 0.5]
+        with self.assertRaises(ValueError):
+            pathwise_tda.arbitrary_path(fake_list_of_complexes, fake_list_of_steps)
+
+    def test_TooManySteps_RaiseValueError(self):
+        fake_complex_A = create_fake_class_A()
+        fake_list_of_complexes = [fake_complex_A, fake_complex_A, fake_complex_A]
+        fake_list_of_steps = [0.5, 1.0, 1.2]
+        with self.assertRaises(ValueError):
+            pathwise_tda.arbitrary_path(fake_list_of_complexes, fake_list_of_steps)
+
+    def test_OneComplex_ReturnsSameComplex(self):
+        fake_complex_A = create_fake_class_A()
+        fake_list_of_complexes = [fake_complex_A]
+        fake_list_of_steps = []
+        result = pathwise_tda.arbitrary_path(fake_list_of_complexes, fake_list_of_steps)
+        self.assertListEqual(
+            list(fake_complex_A.get_filtration()), list(result.get_filtration())
+        )
+
+    def test_TwoSteps_AddedSimplicesHaveAlphaVals(self):
+        fake_complex_1 = gudhi.SimplexTree()
+        fake_complex_1.insert([0], 0.0)
+        fake_complex_2 = gudhi.SimplexTree()
+        fake_complex_2.insert([1], 0.0)
+        fake_complex_3 = gudhi.SimplexTree()
+        fake_complex_3.insert([2], 0.0)
+        result = pathwise_tda.arbitrary_path(
+            [fake_complex_1, fake_complex_2, fake_complex_3], [1.0, 2.0]
+        )
+        mock_result = gudhi.SimplexTree()
+        mock_result.insert([0], 0.0)
+        mock_result.insert([1], 1.0)
+        mock_result.insert([2], 2.0)
+        self.assertListEqual(
+            list(result.get_filtration()), list(mock_result.get_filtration())
+        )
+
+
+class Test_extract_filt_values_from_persistence(unittest.TestCase):
+    def test_OneEdgeAtFilt2_ReturnZeroTwoInf(self):
+        fake_complex = gudhi.SimplexTree()
+        fake_complex.insert([0], 0.0)
+        fake_complex.insert([1], 0.0)
+        fake_complex.insert([0, 1], 2.0)
+        result = pathwise_tda.extract_filt_values_from_persistence(fake_complex)
+        np.testing.assert_allclose(result, np.array([0.0, 2.0, np.inf]))
+
+    def test_OneEdgeAtTwoOneVertexAt1_ReturnZeroOneTwoInf(self):
+        fake_complex = gudhi.SimplexTree()
+        fake_complex.insert([0], 0.0)
+        fake_complex.insert([1], 1.0)
+        fake_complex.insert([0, 1], 2.0)
+        result = pathwise_tda.extract_filt_values_from_persistence(fake_complex)
+        np.testing.assert_allclose(result, np.array([0.0, 1.0, 2.0, np.inf]))
+
+    def test_TriangleAt2EdgesAt1VerticesAt0_ReturnZeroOneTwoInf(self):
+        fake_complex = gudhi.SimplexTree()
+        fake_complex.insert([0], 0.0)
+        fake_complex.insert([1], 0.0)
+        fake_complex.insert([2], 0.0)
+        fake_complex.insert([0, 1], 1.0)
+        fake_complex.insert([0, 2], 1.0)
+        fake_complex.insert([1, 2], 1.0)
+        fake_complex.insert([0, 1, 2], 2.0)
+        result = pathwise_tda.extract_filt_values_from_persistence(fake_complex)
+        np.testing.assert_allclose(result, np.array([0.0, 1.0, 2.0, np.inf]))
