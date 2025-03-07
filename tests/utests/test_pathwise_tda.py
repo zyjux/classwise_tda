@@ -84,9 +84,9 @@ class Test_create_classwise_complexes(unittest.TestCase):
         )
         fake_class_slices = {"A": slice(3)}
         result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
-        self.assertEqual(len(result), 1)
+        self.assertEqual(result.number_of_nodes(), 1)
 
-    def test_OneClass_DictOfSimplexTrees(self):
+    def test_OneClass_NodesContainSimplexTrees(self):
         fake_data = np.array(
             [
                 [0.0, 0.0],
@@ -96,7 +96,19 @@ class Test_create_classwise_complexes(unittest.TestCase):
         )
         fake_class_slices = {"A": slice(3)}
         result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
-        self.assertIsInstance(result["A"], gudhi.SimplexTree)
+        self.assertIsInstance(result.nodes[("A",)]["simplex"], gudhi.SimplexTree)
+
+    def test_OneClass_NoEdges(self):
+        fake_data = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.0, 1.0],
+            ]
+        )
+        fake_class_slices = {"A": slice(3)}
+        result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
+        self.assertEqual(result.number_of_edges(), 0)
 
     def test_OneClass_ComplexMatches(self):
         fake_data = np.array(
@@ -111,7 +123,7 @@ class Test_create_classwise_complexes(unittest.TestCase):
         fake_result_complex = create_fake_class_A()
         self.assertListEqual(
             list(fake_result_complex.get_filtration()),
-            list(result["A"].get_filtration()),
+            list(result.nodes[("A",)]["simplex"].get_filtration()),
         )
 
     def test_TwoClasses_ResultIsLen3(self):
@@ -127,7 +139,22 @@ class Test_create_classwise_complexes(unittest.TestCase):
         )
         fake_class_slices = {"A": slice(3), "B": slice(3, 6)}
         result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(result.number_of_nodes(), 3)
+
+    def test_TwoClasses_TwoEdges(self):
+        fake_data = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [2.0, 1.0],
+                [1.0, 1.0],
+                [2.0, 0.0],
+            ]
+        )
+        fake_class_slices = {"A": slice(3), "B": slice(3, 6)}
+        result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
+        self.assertEqual(result.number_of_edges(), 2)
 
     def test_TwoClasses_FirstComplexMatches(self):
         fake_data = np.array(
@@ -145,8 +172,24 @@ class Test_create_classwise_complexes(unittest.TestCase):
         fake_result_complex = create_fake_class_A()
         self.assertListEqual(
             list(fake_result_complex.get_filtration()),
-            list(result["A"].get_filtration()),
+            list(result.nodes[("A",)]["simplex"].get_filtration()),
         )
+
+    def test_TwoClasses_EdgeFromFirstClassToUnion(self):
+        fake_data = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [2.0, 1.0],
+                [1.0, 1.0],
+                [2.0, 0.0],
+            ]
+        )
+        fake_class_slices = {"A": slice(3), "B": slice(3, 6)}
+        result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
+        edge_from_A_to_union = (("A",), ("A", "B"))
+        self.assertIn(edge_from_A_to_union, result.edges)
 
     def test_TwoClasses_SecondComplexMatches(self):
         fake_data = np.array(
@@ -164,8 +207,24 @@ class Test_create_classwise_complexes(unittest.TestCase):
         fake_result_complex = create_fake_class_B()
         self.assertListEqual(
             list(fake_result_complex.get_filtration()),
-            list(result["B"].get_filtration()),
+            list(result.nodes[("B",)]["simplex"].get_filtration()),
         )
+
+    def test_TwoClasses_EdgeFromSecondClassToUnion(self):
+        fake_data = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [2.0, 1.0],
+                [1.0, 1.0],
+                [2.0, 0.0],
+            ]
+        )
+        fake_class_slices = {"A": slice(3), "B": slice(3, 6)}
+        result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
+        edge_from_B_to_union = (("B",), ("A", "B"))
+        self.assertIn(edge_from_B_to_union, result.edges)
 
     def test_TwoClasses_UnionComplexMatches(self):
         fake_data = np.array(
@@ -181,7 +240,45 @@ class Test_create_classwise_complexes(unittest.TestCase):
         fake_class_slices = {"A": slice(3), "B": slice(3, 6)}
         result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
         fake_result_complex = create_fake_union_class()
-        self.assertTrue(fake_result_complex.__eq__(result["A_U_B"]))
+        self.assertListEqual(
+            list(fake_result_complex.get_filtration()),
+            list(result.nodes[("A", "B")]["simplex"].get_filtration()),
+        )
+
+    def test_ThreeClasses_SevenNodes(self):
+        fake_data = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 1.0],
+                [2.0, 2.0],
+            ]
+        )
+        fake_class_slices = {"A": slice(1), "B": slice(1, 2), "C": slice(2, 3)}
+        result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
+        self.assertEqual(result.number_of_nodes(), 7)
+
+    def test_ThreeClasses_SpecificEdgeList(self):
+        fake_data = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 1.0],
+                [2.0, 2.0],
+            ]
+        )
+        fake_class_slices = {"A": slice(1), "B": slice(1, 2), "C": slice(2, 3)}
+        result = pathwise_tda.create_classwise_complexes(fake_data, fake_class_slices)
+        mock_edge_set = {
+            (("A",), ("A", "B")),
+            (("B",), ("A", "B")),
+            (("A",), ("A", "C")),
+            (("C",), ("A", "C")),
+            (("B",), ("B", "C")),
+            (("C",), ("B", "C")),
+            (("A", "B"), ("A", "B", "C")),
+            (("A", "C"), ("A", "B", "C")),
+            (("B", "C"), ("A", "B", "C")),
+        }
+        self.assertSetEqual(set(result.edges), mock_edge_set)
 
 
 class Test_step_func_path_complex(unittest.TestCase):

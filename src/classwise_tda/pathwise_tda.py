@@ -4,6 +4,7 @@ from itertools import chain, combinations
 from typing import Optional
 
 import gudhi
+import networkx as nx
 import numpy as np
 from scipy.spatial.distance import cdist
 
@@ -18,7 +19,7 @@ def create_classwise_complexes(
     data_points: np.ndarray,
     class_slices: dict[str, slice],
     max_dim: Optional[int] = None,
-) -> dict[str, gudhi.SimplexTree]:
+) -> nx.DiGraph:
     """Creates filtered simplicial complexes for each class and combination of classes
 
     Arguments
@@ -38,9 +39,11 @@ def create_classwise_complexes(
 
     Returns
     ----------
-    dictionary of the form str:gudhi.SimplexTree
-    Dictionary where the key indicates the class or union of classes and the value is
-    the filtered simplicial complex for that class or union of classes.
+    networkx.DiGraph with tuples of strings as nodes :
+    Directed graph with nodes given by tuples of classes (with the order in each tuple
+    derived from the ordering of keys in class_slices) and edges showing inclusion. Each
+    node has a "simplex" key that contains the filtered simplicial complex for that
+    class or union of classes.
     """
 
     # Set up
@@ -52,11 +55,10 @@ def create_classwise_complexes(
     # Compute data radius so we can ignore infinite-length edges
     data_radius = distance_matrix.max()
     class_combos = powerset(class_slices.keys())
-    classwise_complexes = dict()
+    classwise_complexes = nx.DiGraph()
 
     # Iterate through combinations of classes
     for class_combo in class_combos:
-        class_name = "_U_".join(class_combo)
         class_distances = distance_matrix.copy()
         missing_classes = [a for a in class_slices.keys() if a not in class_combo]
         for this_class in missing_classes:
@@ -68,7 +70,10 @@ def create_classwise_complexes(
             class_distances, max_filtration=data_radius
         )
         class_simplex.expansion(max_dim)  # type: ignore
-        classwise_complexes[class_name] = class_simplex
+        classwise_complexes.add_node(class_combo, simplex=class_simplex)
+        for node in classwise_complexes.nodes:
+            if len(node) == len(class_combo) - 1 and set(node) <= set(class_combo):
+                classwise_complexes.add_edge(node, class_combo)
     return classwise_complexes
 
 
