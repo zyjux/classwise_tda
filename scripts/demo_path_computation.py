@@ -20,9 +20,9 @@ B_slice = slice(
 complexes = pathwise_tda.create_classwise_complexes(
     unified_points.data, {class_A_name: A_slice, class_B_name: B_slice}
 )
-A_complex = complexes[class_A_name]
-B_complex = complexes[class_B_name]
-union_complex = complexes[class_A_name + "_U_" + class_B_name]
+A_complex = complexes.nodes[class_A_name]["simplex"]
+B_complex = complexes.nodes[class_B_name]["simplex"]
+union_complex = complexes.nodes[(class_A_name, class_B_name)]["simplex"]
 
 # Compute PH
 A_persistence = A_complex.persistence()
