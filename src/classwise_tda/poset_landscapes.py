@@ -478,9 +478,9 @@ def extract_landscape_and_filt_vals_from_union(
     node_list = list(union_subgraph.nodes)
 
     if len(node_list) == 0:
-        raise ValueError("Union not present in graph")
+        raise ValueError("Specified classes not present in graph")
 
-    node_list.sort(key=itemgetter(2))
+    node_list.sort(key=itemgetter(-1))
 
     landscape_values = [
         union_subgraph.nodes[node]["landscape_values"] for node in node_list
