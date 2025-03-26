@@ -7,6 +7,7 @@ import gudhi
 import gudhi.representations as greps
 import networkx as nx
 import numpy as np
+import xarray as xr
 from tqdm import tqdm
 
 from . import setup_utils
@@ -490,5 +491,44 @@ def extract_landscape_and_filt_vals_from_union(
     return np.array(filtration_values), np.array(landscape_values)
 
 
-def discretize_poset_graph_landscapes(poset_graph: nx.DiGraph, resolution: int):
+def discretize_poset_graph_landscapes(
+    poset_graph: nx.DiGraph, resolution: int
+) -> xr.DataArray:
     """Create discretized array form of poset landscapes"""
+
+    unions = list({node[:-1] for node in poset_graph.nodes})
+    unions.sort()
+    extracted_values = {
+        union: extract_landscape_and_filt_vals_from_union(poset_graph, union)
+        for union in unions
+    }
+    unshaped_filt_vals = np.concatenate(
+        [np.ravel(values[0]) for values in extracted_values.values()]
+    )
+    min_filt_val = unshaped_filt_vals[np.isfinite(unshaped_filt_vals)].min()
+    max_filt_val = unshaped_filt_vals[np.isfinite(unshaped_filt_vals)].max()
+
+    grid = np.linspace(min_filt_val, max_filt_val, resolution)
+    output_shape = (
+        len(unions),
+        extracted_values[unions[0]][1].shape[1],
+        extracted_values[unions[0]][1].shape[2],
+        resolution,
+    )
+    raw_interpolated_array = np.empty(output_shape, dtype=float)
+    for i, union in enumerate(unions):
+        for hom_dimension in range(output_shape[1]):
+            for landscape_func in range(output_shape[2]):
+                raw_interpolated_array[i, hom_dimension, landscape_func, :] = np.interp(
+                    grid,
+                    extracted_values[union][0],
+                    extracted_values[union][1][:, hom_dimension, landscape_func],
+                )
+
+    unions_as_strings = [" U ".join(union) for union in unions]
+    array = xr.DataArray(
+        raw_interpolated_array,
+        dims=("union", "homology_dimension", "landscape_func", "filt_vals"),
+        coords={"union": unions_as_strings, "filt_vals": grid},
+    )
+    return array

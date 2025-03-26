@@ -239,3 +239,58 @@ class Test_extract_landscape_and_filt_vals_from_union(unittest.TestCase):
             axis=0,
         )
         np.testing.assert_allclose(result[1], mock_result)
+
+
+class Test_discretize_poset_graph_landscapes(unittest.TestCase):
+    def test_GivenGraph_OutputIsCorrectShape(self):
+        """Check that function returns an array of the correct shape"""
+        fake_poset_graph = create_fake_poset_graph()
+        resolution = 10
+        result = poset_landscapes.discretize_poset_graph_landscapes(
+            fake_poset_graph, resolution
+        )
+        mock_shape = [2, 2, 3, 10]
+        self.assertListEqual(list(result.shape), mock_shape)
+
+    def test_GivenGraph_CorrectDiscretizationGrid(self):
+        """Check that the discretization grid coordinates are correct"""
+        fake_poset_graph = create_fake_poset_graph()
+        resolution = 5
+        result = poset_landscapes.discretize_poset_graph_landscapes(
+            fake_poset_graph, resolution
+        )
+        mock_grid = np.array([0, 0.5, 1.0, 1.5, 2.0])
+        np.testing.assert_allclose(result["filt_vals"], mock_grid)
+
+    def test_GivenGraph_CorrectUnionLabels(self):
+        """Check that the union label strings are created and ordered correctly"""
+        fake_poset_graph = create_fake_poset_graph()
+        resolution = 5
+        result = poset_landscapes.discretize_poset_graph_landscapes(
+            fake_poset_graph, resolution
+        )
+        mock_coords = np.array(["A", "A U B"])
+        np.testing.assert_array_equal(result["union"], mock_coords)
+
+    def test_GivenGraph_CorrectInterpolationValues(self):
+        """Check that the interpolation is performed correctly"""
+        fake_poset_graph = create_fake_poset_graph()
+        resolution = 3
+        result = poset_landscapes.discretize_poset_graph_landscapes(
+            fake_poset_graph, resolution
+        )
+        mock_class_A_interpolation = np.stack(
+            [np.zeros((2, 3), dtype=float), np.ones((2, 3)), np.ones((2, 3))], axis=-1
+        )
+        mock_class_AUB_interpolation = np.stack(
+            [np.zeros((2, 3), dtype=float), np.ones((2, 3)), 2 * np.ones((2, 3))],
+            axis=-1,
+        )
+        with self.subTest(union="A"):
+            np.testing.assert_allclose(
+                result.sel({"union": "A"}), mock_class_A_interpolation
+            )
+        with self.subTest(union="A U B"):
+            np.testing.assert_allclose(
+                result.sel({"union": "A U B"}), mock_class_AUB_interpolation
+            )
