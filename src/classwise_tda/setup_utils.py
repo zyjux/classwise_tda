@@ -1,12 +1,15 @@
-"""Utilities to compute persistent homology along arbitrary paths"""
+"""Utilities to set up data structures"""
 
 from itertools import chain, combinations
-from typing import Optional
+from typing import Any, Optional, Union, Unpack
 
 import gudhi
+import gudhi.representations as greps
 import networkx as nx
 import numpy as np
 from scipy.spatial.distance import cdist
+
+POSET_NODE_TYPE = tuple[Unpack[tuple[str, ...]], float]
 
 
 def powerset(iterable) -> chain:
@@ -111,7 +114,9 @@ def add_classwise_complexes(
     return inclusion_graph
 
 
-def extract_filt_values_from_persistence(simplicial_complex: gudhi.SimplexTree):
+def extract_filt_values_from_persistence(
+    simplicial_complex: gudhi.SimplexTree,
+) -> np.ndarray:
     """Extract all unique filtration values that are a birth or death value"""
     max_dim = simplicial_complex.upper_bound_dimension()
     if not simplicial_complex._is_persistence_defined():
@@ -130,7 +135,7 @@ def extract_filt_values_from_persistence(simplicial_complex: gudhi.SimplexTree):
     return np.unique(birth_death_array)
 
 
-def create_full_poset_graph(inclusion_graph: nx.DiGraph):
+def create_full_poset_graph(inclusion_graph: nx.DiGraph) -> nx.DiGraph:
     """Create full poset graph from inclusion graph and PH information
 
     Arguments
@@ -168,7 +173,7 @@ def create_full_poset_graph(inclusion_graph: nx.DiGraph):
 
     poset_graph = nx.DiGraph()
 
-    # Compute complete list of filtration values and
+    # Compute complete list of filtration values
     for node in inclusion_graph.nodes:
         inclusion_graph.nodes[node]["complete_filt_vals"] = np.unique(
             np.concatenate(
@@ -207,82 +212,7 @@ def create_full_poset_graph(inclusion_graph: nx.DiGraph):
             poset_graph.add_edge(
                 (*inclusion_edge[0], filt_val),
                 (*inclusion_edge[1], filt_val),
-                poset_weight=inclusion_graph.edges[inclusion_edge]["poset_weight"],
+                weight=inclusion_graph.edges[inclusion_edge]["weight"],
             )
 
     return poset_graph
-
-
-def step_func_path_complex(
-    base_complex: gudhi.SimplexTree,
-    union_complex: gudhi.SimplexTree,
-    alpha: float,
-) -> gudhi.SimplexTree:
-    """Computes filtered simplicial complex for path stepping at filtration value alpha
-
-    Arguments
-    ----------
-    base_complex : gudhi.SimplexTree
-    Filtered simplicial complex for the starting class.
-
-    union_complex : gudhi.SimplexTree
-    Filtered simplicial complex for the union of the starting class (base_complex) with
-    some other class.
-
-    alpha : float
-    Filtration value at which to step from computing PH along base_complex to computing
-    along union_complex.
-
-    Returns
-    ----------
-    gudhi.SimplexTree
-    Filtered simplicial complex for the path traveling along base_complex up to alpha
-    and along union_complex after alpha. Note that only simplices from union_complex
-    with finite filtration values will be inserted.
-    """
-
-    path_complex = base_complex.copy()
-    for simplex, filt_val in union_complex.get_filtration():
-        if filt_val < alpha:
-            filt_val = alpha
-        if np.isfinite(filt_val):
-            _ = path_complex.insert(simplex, filt_val)
-
-    return path_complex
-
-
-def arbitrary_path_complex(
-    list_of_complexes: list[gudhi.SimplexTree], list_of_steps: list[float]
-) -> gudhi.SimplexTree:
-    """Computes filtered simplicial complex for an arbitrary path of complexes
-
-    Arguments
-    ---
-    list_of_complexes : list of gudhi.SimplexTree
-    List of filtered simplicial complexes to pass through in order.
-
-    list_of_steps : list of floats
-    List of filtration values at which to step between complexes. Must be increasing.
-
-    Returns
-    ---
-    gudhi.SimplexTree : Filtered simplicial complex representing starting in
-    list_of_complexes[0], stepping to list_of_complexes[1] at filtration value
-    list_of_steps[0], and so forth until ending in list_of_complexes[-1].
-    """
-
-    if len(list_of_steps) != len(list_of_complexes) - 1:
-        raise ValueError(
-            "List of complexes must be 1 longer than list of steps: "
-            f"got {len(list_of_complexes)} and {len(list_of_steps)}."
-        )
-
-    if list_of_steps != sorted(list_of_steps):
-        raise ValueError("List of steps must be increasing.")
-
-    path_complex = list_of_complexes[0]
-    for i, alpha in enumerate(list_of_steps):
-        path_complex = step_func_path_complex(
-            path_complex, list_of_complexes[i + 1], alpha
-        )
-    return path_complex
