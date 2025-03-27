@@ -364,6 +364,7 @@ def add_landscape_values_to_poset_graph(
 def compute_classwise_landscape_poset(
     data_points: np.ndarray,
     class_slices: dict[str, slice],
+    class_weights: dict[tuple[tuple[str, ...], tuple[str, ...]], float],
     complex_max_dim: Optional[int] = None,
     landscape_max_dim: int = -1,
     homology_coeff_field: int = 11,
@@ -384,6 +385,10 @@ def compute_classwise_landscape_poset(
     indicating which points belong to that class. These slices do not need to be
     disjoint (i.e., a single point can belong to more than one class). Must contain a
     key for each of the source nodes (i.e., single classes) in the inclusion_graph.
+
+    class_weights : dictionary
+    Dictionary with inclusion graph edge labels (2-tuples of nodes, which are themselves
+    tuples of strings) as keys, and floats as values.
 
     complex_max_dim : int or None
     Maximum dimension to which the simplicial complex should be expanded to. If None,
@@ -429,7 +434,9 @@ def compute_classwise_landscape_poset(
     simplicial complex (a gudhi.SimplexTree) for that particular union.
     """
 
-    inclusion_graph = setup_utils.create_inclusion_graph(tuple(class_slices.keys()))
+    inclusion_graph = setup_utils.create_inclusion_graph(
+        tuple(class_slices.keys()), weights=class_weights
+    )
     inclusion_graph = setup_utils.add_classwise_complexes(
         inclusion_graph, data_points, class_slices, max_dim=complex_max_dim
     )
