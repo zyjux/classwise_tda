@@ -533,6 +533,128 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
             np.testing.assert_allclose(result[path_2]["landscapes"], fake_landscapes_2)
 
 
+class Test_find_node_landscape_value(unittest.TestCase):
+    def test_NodeNotOnPaths_RaiseError(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            }
+        }
+        fake_node = ("B", 1.0)
+        with self.assertRaises(RuntimeError):
+            _ = poset_landscapes.find_node_landscape_value(
+                fake_node, fake_path_dict, fake_poset_graph
+            )
+
+    def test_NodeAtExactValueNoStepsAcrossClasses_ReturnValue(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            }
+        }
+        fake_node = ("A", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 1.0)
+
+    def test_NodeAtExactValueOneStepAcrossClasses_ReturnValue(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            }
+        }
+        fake_node = ("A", "B", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 2.0)
+
+    def test_NodeBetweenGridValues_InterpValue(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 2.0, 4.0]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            }
+        }
+        fake_node = ("A", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 0.5)
+
+    def test_FiniteNodeAboveLastGridValue_ReturnMaxLandscapeVal(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 0.25, 0.5]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            }
+        }
+        fake_node = ("A", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 2.0)
+
+    def test_InfiniteNodeAboveLastGridValue_ReturnMaxLandscapeVal(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 0.25, 0.5]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            }
+        }
+        fake_node = ("A", "B", np.inf)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 2.0)
+
+    def test_NodeOnTwoPaths_ReturnMinValue(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            },
+            (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 0.7, 1.0]]]),
+            },
+        }
+        fake_node = ("A", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 0.7)
+
+    def test_NodeOnOneOfTwoPaths_ReturnPathValue(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 1.0, 2.0]]]),
+            },
+            (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array([[[0.0, 0.7, 1.0]]]),
+            },
+        }
+        fake_node = ("A", "B", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        self.assertEqual(result.item(), 2.0)
+
+
 class Test_extract_landscape_and_filt_vals_from_union(unittest.TestCase):
     def test_GivenGraphClassA_ExtractCorrectFiltVals(self):
         """Check filtration values for one-class union in fake poset graph"""

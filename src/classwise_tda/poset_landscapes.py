@@ -308,10 +308,10 @@ def find_node_landscape_value(
         # Find filtration value offset
         step_edges_up_to_node = []
         for i in range(len(path) - 1):
+            if path[i][:-1] == node[:-1]:
+                break
             if path[i][:-1] != path[i + 1][:-1]:
                 step_edges_up_to_node.append((path[i], path[i + 1]))
-                if path[i + 1][:-1] == node[:-1]:
-                    break
         step_edge_weights = [
             poset_graph.edges[edge]["weight"] for edge in step_edges_up_to_node
         ]
