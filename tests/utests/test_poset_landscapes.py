@@ -655,6 +655,42 @@ class Test_find_node_landscape_value(unittest.TestCase):
         self.assertEqual(result.item(), 2.0)
 
 
+class add_landscape_values_to_poset_graph(unittest.TestCase):
+    def test_NotCoveringSetOfPaths_RaiseRuntimeError(self):
+        """Test that all nodes get a landscape value assigned"""
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf)): {
+                "grid": np.array([0.0]),
+                "landscapes": np.array([[[0.0]]]),
+            },
+        }
+        with self.assertRaises(RuntimeError):
+            _ = poset_landscapes.add_landscape_values_to_poset_graph(
+                fake_poset_graph, fake_path_dict
+            )
+
+    def test_CoveringSetOfPaths_AllNodesGetValues(self):
+        """Test that all nodes get a landscape value assigned"""
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf)): {
+                "grid": np.array([0.0]),
+                "landscapes": np.array([[[0.0]]]),
+            },
+            (("A", 0.0), ("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0]),
+                "landscapes": np.array([[[0.0]]]),
+            },
+        }
+        result = poset_landscapes.add_landscape_values_to_poset_graph(
+            fake_poset_graph, fake_path_dict
+        )
+        for node in result.nodes:
+            with self.subTest(node=node):
+                self.assertEqual(result.nodes[node]["landscape_vals"].item(), 0.0)
+
+
 class Test_extract_landscape_and_filt_vals_from_union(unittest.TestCase):
     def test_GivenGraphClassA_ExtractCorrectFiltVals(self):
         """Check filtration values for one-class union in fake poset graph"""
