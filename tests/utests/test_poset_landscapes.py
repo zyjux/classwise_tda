@@ -406,6 +406,132 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
         )
         self.assertEqual(len(result), 4)
 
+    def test_GivenPoset_GridsAreCorrect(self):
+        """Test all four grid parameters are set correctly"""
+        fake_poset = create_fake_poset()
+        fake_inclusion_graph = nx.DiGraph()
+        fake_complex_1 = gudhi.SimplexTree()
+        fake_complex_1.insert([0], 0.0)
+        fake_complex_1.insert([1], 0.0)
+        fake_complex_1.insert([0, 1], 1.0)
+        fake_complex_2 = gudhi.SimplexTree()
+        fake_complex_2.insert([0], 0.0)
+        fake_complex_2.insert([1], 0.0)
+        fake_complex_2.insert([2], 0.0)
+        fake_complex_2.insert([0, 1], 1.0)
+        fake_complex_2.insert([0, 2], 2.0)
+        fake_inclusion_graph.add_node(("A",), simplex=fake_complex_1)
+        fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
+        fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=1.0)
+        result = poset_landscapes.landscapes_for_all_paths(
+            fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=7
+        )
+        fake_grid_03 = np.linspace(0, 3, 7)
+        fake_grid_02 = np.linspace(0, 2, 7)
+        fake_grid_01 = np.linspace(0, 1, 7)
+        with self.subTest():
+            path_1 = (("A", 0.0), ("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_1]["grid"], fake_grid_03)
+        with self.subTest():
+            path_2 = (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_2]["grid"], fake_grid_03)
+        with self.subTest():
+            path_3 = (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_3]["grid"], fake_grid_01)
+        with self.subTest():
+            path_4 = (("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_4]["grid"], fake_grid_02)
+
+    def test_GivenPoset_CheckTwoPaths(self):
+        """Test alpha = 1 and alpha = 0 paths"""
+        fake_poset = create_fake_poset()
+        fake_inclusion_graph = nx.DiGraph()
+        fake_complex_1 = gudhi.SimplexTree()
+        fake_complex_1.insert([0], 0.0)
+        fake_complex_1.insert([1], 0.0)
+        fake_complex_1.insert([0, 1], 1.0)
+        fake_complex_2 = gudhi.SimplexTree()
+        fake_complex_2.insert([0], 0.0)
+        fake_complex_2.insert([1], 0.0)
+        fake_complex_2.insert([2], 0.0)
+        fake_complex_2.insert([0, 1], 1.0)
+        fake_complex_2.insert([0, 2], 2.0)
+        fake_inclusion_graph.add_node(("A",), simplex=fake_complex_1)
+        fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
+        fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=1.0)
+        result = poset_landscapes.landscapes_for_all_paths(
+            fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=7
+        )
+        with self.subTest():
+            fake_landscapes_1 = np.array(
+                [
+                    [
+                        [0, 0.5, 1.0, 0.5, 1.0, 0.5, 0.0],
+                        [0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0],
+                    ]
+                ]
+            )
+            fake_landscapes_1 = np.sqrt(2) * fake_landscapes_1
+            path_1 = (("A", 0.0), ("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_1]["landscapes"], fake_landscapes_1)
+        with self.subTest():
+            fake_landscapes_2 = np.array(
+                [
+                    [
+                        [0, 0.5, 0.0, 0.0, 0.0, 0.5, 0.0],
+                        [0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    ]
+                ]
+            )
+            fake_landscapes_2 = np.sqrt(2) * fake_landscapes_2
+            path_2 = (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_2]["landscapes"], fake_landscapes_2)
+
+    def test_GivenPoset_CheckOtherTwoPaths(self):
+        """Test alpha = inf and starting in A U B paths"""
+        fake_poset = create_fake_poset()
+        fake_inclusion_graph = nx.DiGraph()
+        fake_complex_1 = gudhi.SimplexTree()
+        fake_complex_1.insert([0], 0.0)
+        fake_complex_1.insert([1], 0.0)
+        fake_complex_1.insert([0, 1], 1.0)
+        fake_complex_2 = gudhi.SimplexTree()
+        fake_complex_2.insert([0], 0.0)
+        fake_complex_2.insert([1], 0.0)
+        fake_complex_2.insert([2], 0.0)
+        fake_complex_2.insert([0, 1], 1.0)
+        fake_complex_2.insert([0, 2], 2.0)
+        fake_inclusion_graph.add_node(("A",), simplex=fake_complex_1)
+        fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
+        fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=1.0)
+        result = poset_landscapes.landscapes_for_all_paths(
+            fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=5
+        )
+        with self.subTest():
+            fake_landscapes_1 = np.array(
+                [
+                    [
+                        [0.0, 0.25, 0.5, 0.25, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0],
+                    ]
+                ]
+            )
+            fake_landscapes_1 = np.sqrt(2) * fake_landscapes_1
+            path_1 = (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_1]["landscapes"], fake_landscapes_1)
+        with self.subTest():
+            fake_landscapes_2 = np.array(
+                [
+                    [
+                        [0.0, 0.5, 1.0, 0.5, 0.0],
+                        [0.0, 0.5, 0.0, 0.0, 0.0],
+                    ]
+                ]
+            )
+            fake_landscapes_2 = np.sqrt(2) * fake_landscapes_2
+            path_2 = (("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
+            np.testing.assert_allclose(result[path_2]["landscapes"], fake_landscapes_2)
+
 
 class Test_extract_landscape_and_filt_vals_from_union(unittest.TestCase):
     def test_GivenGraphClassA_ExtractCorrectFiltVals(self):
