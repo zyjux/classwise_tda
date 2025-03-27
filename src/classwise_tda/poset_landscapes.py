@@ -355,7 +355,7 @@ def add_landscape_values_to_poset_graph(
     under the "landscape_vals" key at each node.
     """
     for node in poset_graph:
-        poset_graph.nodes[node]["landscape_vals"] = find_node_landscape_value(
+        poset_graph.nodes[node]["landscape_values"] = find_node_landscape_value(
             node, path_dict, poset_graph
         )
     return poset_graph

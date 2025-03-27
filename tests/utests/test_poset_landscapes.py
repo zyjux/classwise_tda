@@ -688,7 +688,7 @@ class add_landscape_values_to_poset_graph(unittest.TestCase):
         )
         for node in result.nodes:
             with self.subTest(node=node):
-                self.assertEqual(result.nodes[node]["landscape_vals"].item(), 0.0)
+                self.assertEqual(result.nodes[node]["landscape_values"].item(), 0.0)
 
 
 class Test_extract_landscape_and_filt_vals_from_union(unittest.TestCase):
