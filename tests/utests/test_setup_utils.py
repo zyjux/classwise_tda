@@ -128,6 +128,17 @@ class Test_create_inclusion_graph(unittest.TestCase):
         }
         self.assertSetEqual(set(result.edges), mock_edge_set)
 
+    def test_TwoClassesWithEdgeWeights_CorrectWeightsAdded(self):
+        fake_classes = ("A", "B")
+        fake_weights = {
+            (("A",), ("A", "B")): 1.0,
+            (("B",), ("A", "B")): 1.0,
+        }
+        result = setup_utils.create_inclusion_graph(fake_classes, weights=fake_weights)
+        for edge in result.edges:
+            with self.subTest(edge=edge):
+                self.assertEqual(result.edges[edge]["weight"], 1.0)
+
 
 class Test_add_classwise_complexes(unittest.TestCase):
     def test_OneClass_NodesContainSimplexTrees(self):

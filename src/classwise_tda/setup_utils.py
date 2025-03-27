@@ -1,10 +1,9 @@
 """Utilities to set up data structures"""
 
 from itertools import chain, combinations
-from typing import Any, Optional, Union, Unpack
+from typing import Optional, Unpack
 
 import gudhi
-import gudhi.representations as greps
 import networkx as nx
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -18,7 +17,10 @@ def powerset(iterable) -> chain:
     return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
 
 
-def create_inclusion_graph(classes: tuple[str, ...] | list[str]) -> nx.DiGraph:
+def create_inclusion_graph(
+    classes: tuple[str, ...] | list[str],
+    weights: Optional[dict[tuple[tuple[str, ...], tuple[str, ...]], float]] = None,
+) -> nx.DiGraph:
     """Function to compute all unions of given classes and their inclusion structure
 
     Arguments
@@ -26,11 +28,16 @@ def create_inclusion_graph(classes: tuple[str, ...] | list[str]) -> nx.DiGraph:
     classes : tuple or list of strings
     List of classes to create inclusion structure for.
 
+    weights : dict
+    Dictionary with edge labels (2-tuples of nodes, which are themselves tuples of
+    strings) as keys, and floats as values.
+
     Returns
     ---
     networkx.DiGraph wth tuples of strings as nodes :
-    Directed graph with nodes given by tuples of classes (with the order in each tuple
-    derived from the ordering of classes in the input list) and edges showing inclusion.
+    Weighted directed graph with nodes given by tuples of classes (with the order in
+    each tuple derived from the ordering of classes in the input list), edges showing
+    inclusion, and edge weights from the "weights" argument.
     """
 
     class_combos = powerset(classes)
@@ -41,7 +48,12 @@ def create_inclusion_graph(classes: tuple[str, ...] | list[str]) -> nx.DiGraph:
         for node in inclusion_graph.nodes:
             # If node is A U B U C, add edges from A U B, A U C, and B U C.
             if len(node) == (len(class_combo) - 1) and set(node) <= set(class_combo):
-                inclusion_graph.add_edge(node, class_combo)
+                if weights is not None:
+                    inclusion_graph.add_edge(
+                        node, class_combo, weight=weights[(node, class_combo)]
+                    )
+                else:
+                    inclusion_graph.add_edge(node, class_combo)
 
     return inclusion_graph
 
