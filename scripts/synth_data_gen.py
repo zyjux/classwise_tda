@@ -29,7 +29,7 @@ F, ax = plt.subplots(1, 1)
 ax.scatter(inner_ring_points[:, 0], inner_ring_points[:, 1], color="blue")
 ax.scatter(outer_ring_points[:, 0], outer_ring_points[:, 1], color="orange")
 
-F.savefig("data/two_ring_data_visualization.png")
+F.savefig("/nfs/home/lverho/classwise_tda/figures/two_ring_data_visualization.png")
 
 # Set up dataset and save
 inner_ring = xr.DataArray(
@@ -40,7 +40,7 @@ outer_ring = xr.DataArray(
 )
 ds = xr.Dataset({"inner_ring": inner_ring, "outer_ring": outer_ring})
 
-ds.to_netcdf("data/two_ring_synth_dataset.nc")
+ds.to_netcdf("/nfs/home/lverho/classwise_tda/data/two_ring_synth_dataset.nc")
 
 
 ##### Two half rings dataset
@@ -69,7 +69,7 @@ F, ax = plt.subplots(1, 1)
 ax.scatter(top_ring_points[:, 0], top_ring_points[:, 1], color="blue")
 ax.scatter(bottom_ring_points[:, 0], bottom_ring_points[:, 1], color="orange")
 
-F.savefig("data/half_rings_data_visualization.png")
+F.savefig("/nfs/home/lverho/classwise_tda/figures/half_rings_data_visualization.png")
 
 # Set up dataset and save
 top_ring = xr.DataArray(
@@ -80,4 +80,4 @@ bottom_ring = xr.DataArray(
 )
 ds = xr.Dataset({"top_ring": top_ring, "bottom_ring": bottom_ring})
 
-ds.to_netcdf("data/half_rings_synth_dataset.nc")
+ds.to_netcdf("/nfs/home/lverho/classwise_tda/data/half_rings_synth_dataset.nc")
