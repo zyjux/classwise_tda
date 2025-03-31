@@ -1,6 +1,5 @@
 """Demo script to compute P-landscapes for two half ring dataset"""
 
-import matplotlib.pyplot as plt
 import xarray as xr
 
 from classwise_tda import poset_landscapes, visualization
@@ -31,11 +30,8 @@ poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_pose
 
 landscape_array = poset_landscapes.discretize_poset_graph_landscapes(poset_graph, 100)
 
-F, ax = plt.subplots(1, 1, figsize=(5, 5))
-visualization.plot_landscape(
-    landscape_array["filt_vals"].values,
-    landscape_array.sel({"union": "bottom"}).values,
-    ax = ax,
-    legend = True
+F, ax = visualization.plot_all_landscapes(
+    landscape_array
 )
-F.savefig("/nfs/home/lverho/classwise_tda/figures/two_half_ring_bottom_landscape.png")
+
+F.savefig("/nfs/home/lverho/classwise_tda/figures/two_half_ring_landscapes.png")
