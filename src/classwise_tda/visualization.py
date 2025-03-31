@@ -32,6 +32,7 @@ def plot_landscape(
     if legend:
         ax.legend(handles=legend_lines)
     ax.set_yticks([])
+    ax.set_aspect("equal")
     if created_fig:
         return F, ax
     else:
@@ -40,11 +41,18 @@ def plot_landscape(
 
 def plot_all_landscapes(
     discretized_poset_landscapes: xr.DataArray,
+    grid_layout: Optional[tuple[int, int]] = None,
+    figsize: tuple[float, float] = (12.0, 12.0),
 ) -> tuple[mpl_fig.Figure, mpl_axes.Axes]:
     """Plot landscapes for each union on separate axes"""
     num_plots = discretized_poset_landscapes.sizes["union"]
-    grid_size = int(np.ceil(np.sqrt(num_plots)))
-    F, axes = plt.subplots(grid_size, grid_size, figsize=(12, 12))
+    if grid_layout is None:
+        grid_size = int(np.ceil(np.sqrt(num_plots)))
+        F, axes = plt.subplots(grid_size, grid_size, figsize=figsize, sharey=True)
+    else:
+        F, axes = plt.subplots(
+            grid_layout[0], grid_layout[1], figsize=figsize, sharey=True
+        )
     for i, union in enumerate(discretized_poset_landscapes["union"]):
         this_ax = np.ravel(axes)[i]
         _ = plot_landscape(
