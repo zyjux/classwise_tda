@@ -230,10 +230,14 @@ def landscapes_for_all_paths(
         node for node in inclusion_graph.nodes if inclusion_graph.out_degree(node) == 0
     ][0]
     final_node = (*maximal_class, np.inf)
+    """
+    # Uncomment this chunk to start paths in all classes, not just minimal ones
     sources = [
         (*node, next(inclusion_graph.nodes[node]["simplex"].get_filtration())[-1])
         for node in inclusion_graph.nodes
     ]
+    """
+    sources = [node for node in poset_graph.nodes if poset_graph.in_degree(node) == 0]
     path_set = list(
         nx.all_simple_paths(poset_graph.reverse(copy=False), final_node, sources)  # type: ignore
     )

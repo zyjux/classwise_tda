@@ -404,10 +404,10 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
         result = poset_landscapes.landscapes_for_all_paths(
             fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=7
         )
-        self.assertEqual(len(result), 4)
+        self.assertEqual(len(result), 3)
 
     def test_GivenPoset_GridsAreCorrect(self):
-        """Test all four grid parameters are set correctly"""
+        """Test all three grid parameters are set correctly"""
         fake_poset = create_fake_poset()
         fake_inclusion_graph = nx.DiGraph()
         fake_complex_1 = gudhi.SimplexTree()
@@ -427,7 +427,6 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
             fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=7
         )
         fake_grid_03 = np.linspace(0, 3, 7)
-        fake_grid_02 = np.linspace(0, 2, 7)
         fake_grid_01 = np.linspace(0, 1, 7)
         with self.subTest():
             path_1 = (("A", 0.0), ("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
@@ -438,9 +437,6 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
         with self.subTest():
             path_3 = (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf))
             np.testing.assert_allclose(result[path_3]["grid"], fake_grid_01)
-        with self.subTest():
-            path_4 = (("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
-            np.testing.assert_allclose(result[path_4]["grid"], fake_grid_02)
 
     def test_GivenPoset_CheckTwoPaths(self):
         """Test alpha = 1 and alpha = 0 paths"""
@@ -487,8 +483,8 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
             path_2 = (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf))
             np.testing.assert_allclose(result[path_2]["landscapes"], fake_landscapes_2)
 
-    def test_GivenPoset_CheckOtherTwoPaths(self):
-        """Test alpha = inf and starting in A U B paths"""
+    def test_GivenPoset_CheckOtherPath(self):
+        """Test alpha = inf"""
         fake_poset = create_fake_poset()
         fake_inclusion_graph = nx.DiGraph()
         fake_complex_1 = gudhi.SimplexTree()
@@ -507,30 +503,17 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
         result = poset_landscapes.landscapes_for_all_paths(
             fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=5
         )
-        with self.subTest():
-            fake_landscapes_1 = np.array(
+        fake_landscapes_1 = np.array(
+            [
                 [
-                    [
-                        [0.0, 0.25, 0.5, 0.25, 0.0],
-                        [0.0, 0.0, 0.0, 0.0, 0.0],
-                    ]
+                    [0.0, 0.25, 0.5, 0.25, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0],
                 ]
-            )
-            fake_landscapes_1 = np.sqrt(2) * fake_landscapes_1
-            path_1 = (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf))
-            np.testing.assert_allclose(result[path_1]["landscapes"], fake_landscapes_1)
-        with self.subTest():
-            fake_landscapes_2 = np.array(
-                [
-                    [
-                        [0.0, 0.5, 1.0, 0.5, 0.0],
-                        [0.0, 0.5, 0.0, 0.0, 0.0],
-                    ]
-                ]
-            )
-            fake_landscapes_2 = np.sqrt(2) * fake_landscapes_2
-            path_2 = (("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf))
-            np.testing.assert_allclose(result[path_2]["landscapes"], fake_landscapes_2)
+            ]
+        )
+        fake_landscapes_1 = np.sqrt(2) * fake_landscapes_1
+        path_1 = (("A", 0.0), ("A", 1.0), ("A", np.inf), ("A", "B", np.inf))
+        np.testing.assert_allclose(result[path_1]["landscapes"], fake_landscapes_1)
 
 
 class Test_find_node_landscape_value(unittest.TestCase):
@@ -653,6 +636,61 @@ class Test_find_node_landscape_value(unittest.TestCase):
             fake_node, fake_path_dict, fake_poset_graph
         )
         self.assertEqual(result.item(), 2.0)
+
+    def test_NodeAtExactValueTwoLandscapes_ReturnBothValues(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array(
+                    [
+                        [
+                            [0.0, 1.0, 2.0],
+                            [0.5, 1.5, 2.5],
+                        ]
+                    ]
+                ),
+            }
+        }
+        fake_node = ("A", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        mock_result = np.array(
+            [
+                [1.0, 1.5],
+            ]
+        )
+        np.testing.assert_allclose(result, mock_result)
+
+    def test_NodeAtExactValueTwoHomDims_ReturnBothValues(self):
+        fake_poset_graph = create_fake_poset()
+        fake_path_dict = {
+            (("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)): {
+                "grid": np.array([0.0, 1.0, 2.0]),
+                "landscapes": np.array(
+                    [
+                        [
+                            [0.0, 1.0, 2.0],
+                        ],
+                        [
+                            [0.5, 1.5, 2.5],
+                        ],
+                    ]
+                ),
+            }
+        }
+        fake_node = ("A", 1.0)
+        result = poset_landscapes.find_node_landscape_value(
+            fake_node, fake_path_dict, fake_poset_graph
+        )
+        mock_result = np.array(
+            [
+                [1.0],
+                [1.5],
+            ]
+        )
+        np.testing.assert_allclose(result, mock_result)
 
 
 class add_landscape_values_to_poset_graph(unittest.TestCase):
