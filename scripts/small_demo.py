@@ -10,15 +10,21 @@ ds = xr.open_dataset("~/classwise_tda/data/half_rings_synth_dataset.nc")
 
 unified_points = xr.concat([ds["top_ring"], ds["bottom_ring"]], dim="index")
 unified_points = unified_points.isel({"index": slice(None, None, SAMPLING_RATIO)})
-print(f"Number of points {unified_points.sizes['index']}")
-A_slice = slice(0, int(ds["top_ring"].sizes["index"] / SAMPLING_RATIO))
-B_slice = slice(
-    int(ds["top_ring"].sizes["index"] / SAMPLING_RATIO),
-    int(
-        (ds["top_ring"].sizes["index"] + ds["bottom_ring"].sizes["index"])
-        / SAMPLING_RATIO
-    ),
+
+unified_points = xr.DataArray(
+    [
+        [0.0, 0.0],
+        [0.4, 0.0],
+        [1.0, 0.0],
+        [0.0, 1.0],
+        [0.4, 1.0],
+        [1.0, 1.0],
+    ],
+    dims=("index", "data"),
 )
+print(f"Number of points {unified_points.sizes['index']}")
+A_slice = slice(None, 3)
+B_slice = slice(3, None)
 weights = {
     (("top",), ("top", "bottom")): 0.1,
     (("bottom",), ("top", "bottom")): 0.1,
@@ -29,7 +35,7 @@ poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_pose
     class_weights=weights,
     homology_coeff_field=2,
     return_inclusion_graph=True,
-    path_landscape_resolution=100000,
+    path_landscape_resolution=1000,
 )
 
 landscape_array = poset_landscapes.discretize_poset_graph_landscapes(poset_graph, 100)
