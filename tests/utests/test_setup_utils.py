@@ -272,23 +272,23 @@ class Test_add_classwise_complexes(unittest.TestCase):
 
 
 class Test_extract_filt_values_from_persistence(unittest.TestCase):
-    def test_OneEdgeAtFilt2_ReturnZeroTwoInf(self):
+    def test_OneEdgeAtFilt2_ReturnZeroOneTwoInf(self):
         fake_complex = gudhi.SimplexTree()
         fake_complex.insert([0], 0.0)
         fake_complex.insert([1], 0.0)
         fake_complex.insert([0, 1], 2.0)
         result = setup_utils.extract_filt_values_from_persistence(fake_complex)
-        np.testing.assert_allclose(result, np.array([0.0, 2.0, np.inf]))
+        np.testing.assert_allclose(result, np.array([0.0, 1.0, 2.0, np.inf]))
 
-    def test_OneEdgeAtTwoOneVertexAt1_ReturnZeroOneTwoInf(self):
+    def test_OneEdgeAtTwoOneVertexAt1_ReturnEndAndMidPoints(self):
         fake_complex = gudhi.SimplexTree()
         fake_complex.insert([0], 0.0)
         fake_complex.insert([1], 1.0)
         fake_complex.insert([0, 1], 2.0)
         result = setup_utils.extract_filt_values_from_persistence(fake_complex)
-        np.testing.assert_allclose(result, np.array([0.0, 1.0, 2.0, np.inf]))
+        np.testing.assert_allclose(result, np.array([0.0, 1.0, 1.5, 2.0, np.inf]))
 
-    def test_TriangleAt2EdgesAt1VerticesAt0_ReturnZeroOneTwoInf(self):
+    def test_TriangleAt2EdgesAt1VerticesAt0_ReturnEndAndMidPoints(self):
         fake_complex = gudhi.SimplexTree()
         fake_complex.insert([0], 0.0)
         fake_complex.insert([1], 0.0)
@@ -298,7 +298,7 @@ class Test_extract_filt_values_from_persistence(unittest.TestCase):
         fake_complex.insert([1, 2], 1.0)
         fake_complex.insert([0, 1, 2], 2.0)
         result = setup_utils.extract_filt_values_from_persistence(fake_complex)
-        np.testing.assert_allclose(result, np.array([0.0, 1.0, 2.0, np.inf]))
+        np.testing.assert_allclose(result, np.array([0.0, 0.5, 1.0, 1.5, 2.0, np.inf]))
 
 
 class Test_create_full_poset_graph(unittest.TestCase):
@@ -316,7 +316,7 @@ class Test_create_full_poset_graph(unittest.TestCase):
         fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
         fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 2.0)
         result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
-        mock_result_nodes = [("A", 0.0), ("A", 2.0), ("A", np.inf)]
+        mock_result_nodes = [("A", 0.0), ("A", 1.0), ("A", 2.0), ("A", np.inf)]
         self.assertListEqual(list(result.nodes), mock_result_nodes)
 
     def test_OneClassOneEdge_ProducesGivenPathGraphEdges(self):
@@ -328,7 +328,8 @@ class Test_create_full_poset_graph(unittest.TestCase):
         fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 2.0)
         result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
         mock_result_edges = [
-            (("A", 0.0), ("A", 2.0)),
+            (("A", 0.0), ("A", 1.0)),
+            (("A", 1.0), ("A", 2.0)),
             (("A", 2.0), ("A", np.inf)),
         ]
         self.assertListEqual(list(result.edges), mock_result_edges)
@@ -347,25 +348,31 @@ class Test_create_full_poset_graph(unittest.TestCase):
         fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
         fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 1.0)
         fake_inclusion_graph.nodes[("B",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([0, 1], 2.0)
+        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([2], 0.0)
+        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([3], 0.0)
+        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([2, 3], 2.0)
         fake_inclusion_graph.nodes[("A", "B")]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0, 1], 3.0)
+        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([4], 0.0)
+        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([5], 0.0)
+        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([4, 5], 3.0)
         result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
         mock_result_nodes = {
             ("A", 0.0),
+            ("A", 0.5),
             ("A", 1.0),
+            ("A", 1.5),
             ("A", 3.0),
             ("A", np.inf),
             ("B", 0.0),
+            ("B", 1.0),
+            ("B", 1.5),
             ("B", 2.0),
             ("B", 3.0),
             ("B", np.inf),
             ("A", "B", 0.0),
+            ("A", "B", 0.5),
             ("A", "B", 1.0),
+            ("A", "B", 1.5),
             ("A", "B", 2.0),
             ("A", "B", 3.0),
             ("A", "B", np.inf),
@@ -395,21 +402,31 @@ class Test_create_full_poset_graph(unittest.TestCase):
         fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0, 1], 3.0)
         result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
         mock_result_edges = {
-            (("A", 0.0), ("A", 1.0)),
-            (("A", 1.0), ("A", 3.0)),
+            (("A", 0.0), ("A", 0.5)),
+            (("A", 0.5), ("A", 1.0)),
+            (("A", 1.0), ("A", 1.5)),
+            (("A", 1.5), ("A", 3.0)),
             (("A", 3.0), ("A", np.inf)),
-            (("B", 0.0), ("B", 2.0)),
+            (("B", 0.0), ("B", 1.0)),
+            (("B", 1.0), ("B", 1.5)),
+            (("B", 1.5), ("B", 2.0)),
             (("B", 2.0), ("B", 3.0)),
             (("B", 3.0), ("B", np.inf)),
-            (("A", "B", 0.0), ("A", "B", 1.0)),
-            (("A", "B", 1.0), ("A", "B", 2.0)),
+            (("A", "B", 0.0), ("A", "B", 0.5)),
+            (("A", "B", 0.5), ("A", "B", 1.0)),
+            (("A", "B", 1.0), ("A", "B", 1.5)),
+            (("A", "B", 1.5), ("A", "B", 2.0)),
             (("A", "B", 2.0), ("A", "B", 3.0)),
             (("A", "B", 3.0), ("A", "B", np.inf)),
             (("A", 0.0), ("A", "B", 0.0)),
+            (("A", 0.5), ("A", "B", 0.5)),
             (("A", 1.0), ("A", "B", 1.0)),
+            (("A", 1.5), ("A", "B", 1.5)),
             (("A", 3.0), ("A", "B", 3.0)),
             (("A", np.inf), ("A", "B", np.inf)),
             (("B", 0.0), ("A", "B", 0.0)),
+            (("B", 1.0), ("A", "B", 1.0)),
+            (("B", 1.5), ("A", "B", 1.5)),
             (("B", 2.0), ("A", "B", 2.0)),
             (("B", 3.0), ("A", "B", 3.0)),
             (("B", np.inf), ("A", "B", np.inf)),
@@ -439,21 +456,31 @@ class Test_create_full_poset_graph(unittest.TestCase):
         fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0, 1], 3.0)
         result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
         mock_result_weights = {
-            (("A", 0.0), ("A", 1.0)): {"weight": 1.0},
-            (("A", 1.0), ("A", 3.0)): {"weight": 2.0},
+            (("A", 0.0), ("A", 0.5)): {"weight": 0.5},
+            (("A", 0.5), ("A", 1.0)): {"weight": 0.5},
+            (("A", 1.0), ("A", 1.5)): {"weight": 0.5},
+            (("A", 1.5), ("A", 3.0)): {"weight": 1.5},
             (("A", 3.0), ("A", np.inf)): {"weight": np.inf},
-            (("B", 0.0), ("B", 2.0)): {"weight": 2.0},
+            (("B", 0.0), ("B", 1.0)): {"weight": 1.0},
+            (("B", 1.0), ("B", 1.5)): {"weight": 0.5},
+            (("B", 1.5), ("B", 2.0)): {"weight": 0.5},
             (("B", 2.0), ("B", 3.0)): {"weight": 1.0},
             (("B", 3.0), ("B", np.inf)): {"weight": np.inf},
-            (("A", "B", 0.0), ("A", "B", 1.0)): {"weight": 1.0},
-            (("A", "B", 1.0), ("A", "B", 2.0)): {"weight": 1.0},
+            (("A", "B", 0.0), ("A", "B", 0.5)): {"weight": 0.5},
+            (("A", "B", 0.5), ("A", "B", 1.0)): {"weight": 0.5},
+            (("A", "B", 1.0), ("A", "B", 1.5)): {"weight": 0.5},
+            (("A", "B", 1.5), ("A", "B", 2.0)): {"weight": 0.5},
             (("A", "B", 2.0), ("A", "B", 3.0)): {"weight": 1.0},
             (("A", "B", 3.0), ("A", "B", np.inf)): {"weight": np.inf},
             (("A", 0.0), ("A", "B", 0.0)): {"weight": 0.5},
+            (("A", 0.5), ("A", "B", 0.5)): {"weight": 0.5},
             (("A", 1.0), ("A", "B", 1.0)): {"weight": 0.5},
+            (("A", 1.5), ("A", "B", 1.5)): {"weight": 0.5},
             (("A", 3.0), ("A", "B", 3.0)): {"weight": 0.5},
             (("A", np.inf), ("A", "B", np.inf)): {"weight": 0.5},
             (("B", 0.0), ("A", "B", 0.0)): {"weight": 1.5},
+            (("B", 1.0), ("A", "B", 1.0)): {"weight": 1.5},
+            (("B", 1.5), ("A", "B", 1.5)): {"weight": 1.5},
             (("B", 2.0), ("A", "B", 2.0)): {"weight": 1.5},
             (("B", 3.0), ("A", "B", 3.0)): {"weight": 1.5},
             (("B", np.inf), ("A", "B", np.inf)): {"weight": 1.5},

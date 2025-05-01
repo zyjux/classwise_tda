@@ -456,12 +456,13 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
         fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
         fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=1.0)
         result = poset_landscapes.landscapes_for_all_paths(
-            fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=7
+            fake_poset, fake_inclusion_graph, num_landscapes=3, landscape_resolution=7
         )
         with self.subTest():
             fake_landscapes_1 = np.array(
                 [
                     [
+                        [0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.0],
                         [0, 0.5, 1.0, 0.5, 1.0, 0.5, 0.0],
                         [0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0],
                     ]
@@ -474,6 +475,7 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
             fake_landscapes_2 = np.array(
                 [
                     [
+                        [0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.0],
                         [0, 0.5, 0.0, 0.0, 0.0, 0.5, 0.0],
                         [0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                     ]
@@ -501,11 +503,12 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
         fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
         fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=1.0)
         result = poset_landscapes.landscapes_for_all_paths(
-            fake_poset, fake_inclusion_graph, num_landscapes=2, landscape_resolution=5
+            fake_poset, fake_inclusion_graph, num_landscapes=3, landscape_resolution=5
         )
         fake_landscapes_1 = np.array(
             [
                 [
+                    [0.0, 0.25, 0.5, 0.25, 0.0],
                     [0.0, 0.25, 0.5, 0.25, 0.0],
                     [0.0, 0.0, 0.0, 0.0, 0.0],
                 ]

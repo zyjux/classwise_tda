@@ -144,7 +144,8 @@ def extract_filt_values_from_persistence(
             )
         except NameError:
             birth_death_array = simplicial_complex.persistence_intervals_in_dimension(i)
-    return np.unique(birth_death_array)
+    midpoints = (birth_death_array[:, 1] + birth_death_array[:, 0]) / 2
+    return np.unique(np.concatenate([np.ravel(birth_death_array), midpoints]))
 
 
 def create_full_poset_graph(inclusion_graph: nx.DiGraph) -> nx.DiGraph:
