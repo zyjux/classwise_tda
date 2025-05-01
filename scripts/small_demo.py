@@ -42,6 +42,4 @@ landscape_array = poset_landscapes.discretize_poset_graph_landscapes(poset_graph
 
 F, ax = visualization.plot_all_landscapes(landscape_array, grid_layout=(3, 1))
 
-F.savefig(
-    "/nfs/home/lverho/classwise_tda/figures/two_half_ring_landscapes_weight_point1.png"
-)
+F.savefig("/nfs/home/lverho/classwise_tda/figures/small_demo.png")
