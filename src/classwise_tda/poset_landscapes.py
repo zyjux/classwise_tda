@@ -255,9 +255,7 @@ def landscapes_for_all_paths(
             for i in range(max_dim + 1)
         ]
         # Truncate infinite value at max filtration value
-        print(path_diagrams[0])
         path_diagrams[0][-1, 1] = max_filtration_value
-        print(path_diagrams[0])
         lscape = greps.Landscape(
             num_landscapes=num_landscapes,
             resolution=landscape_resolution,
