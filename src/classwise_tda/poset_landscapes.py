@@ -248,13 +248,16 @@ def landscapes_for_all_paths(
         path_complex = compute_complex_from_graph_path(
             path[::-1], poset_graph, inclusion_graph
         )
+        max_filtration_value = list(path_complex.get_filtration())[-1][-1]
         path_complex.compute_persistence(homology_coeff_field=homology_coeff_field)
         path_diagrams = [
             path_complex.persistence_intervals_in_dimension(i)
             for i in range(max_dim + 1)
         ]
-        # Remove infinite bar
-        path_diagrams[0] = path_diagrams[0][:-1, :]
+        # Truncate infinite value at max filtration value
+        print(path_diagrams[0])
+        path_diagrams[0][-1, 1] = max_filtration_value
+        print(path_diagrams[0])
         lscape = greps.Landscape(
             num_landscapes=num_landscapes,
             resolution=landscape_resolution,
