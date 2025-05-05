@@ -268,12 +268,36 @@ class Test_compute_complex_from_graph_path(unittest.TestCase):
         fake_inclusion_graph = nx.DiGraph()
         fake_inclusion_graph.add_node(("A",), simplex=fake_complex)
         path = [("A", 0.0), ("A", 1.0), ("A", np.inf)]
-        result = poset_landscapes.compute_complex_from_graph_path(
+        result, _, _ = poset_landscapes.compute_complex_from_graph_path(
             path, fake_poset, fake_inclusion_graph
         )
         self.assertListEqual(
             list(result.get_filtration()), list(fake_complex.get_filtration())
         )
+
+    def test_PathInOneComplex_ReturnEmptyListsOfSteps(self):
+        """Test that if the path lies in only one union, return empty step lists"""
+        fake_poset = nx.DiGraph()
+        fake_poset.add_node(("A", 0.0))
+        fake_poset.add_node(("A", 1.0))
+        fake_poset.add_node(("A", np.inf))
+        fake_poset.add_weighted_edges_from(
+            [(("A", 0.0), ("A", 1.0), 1.0), (("A", 1.0), ("A", np.inf), np.inf)]
+        )
+        fake_complex = gudhi.SimplexTree()
+        fake_complex.insert([0], 0.0)
+        fake_inclusion_graph = nx.DiGraph()
+        fake_inclusion_graph.add_node(("A",), simplex=fake_complex)
+        path = [("A", 0.0), ("A", 1.0), ("A", np.inf)]
+        _, result_list_of_steps, result_list_of_step_weights = (
+            poset_landscapes.compute_complex_from_graph_path(
+                path, fake_poset, fake_inclusion_graph
+            )
+        )
+        with self.subTest():
+            self.assertListEqual(result_list_of_steps, list())
+        with self.subTest():
+            self.assertListEqual(result_list_of_step_weights, list())
 
     def test_PathNotInGraph_RaiseValueError(self):
         """Test that function raises an error if path is not in the graph"""
@@ -295,7 +319,7 @@ class Test_compute_complex_from_graph_path(unittest.TestCase):
             )
 
     def test_PathAcrossUnionsNoWeights_ReturnAppropriateComplex(self):
-        """Test that alpha values process correctly"""
+        """Test that alpha values process correctly for the complex"""
         fake_poset = nx.DiGraph()
         fake_poset.add_node(("A", 0.0))
         fake_poset.add_node(("A", 1.0))
@@ -328,7 +352,7 @@ class Test_compute_complex_from_graph_path(unittest.TestCase):
         fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
         fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=0.0)
         path = [("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)]
-        result = poset_landscapes.compute_complex_from_graph_path(
+        result, _, _ = poset_landscapes.compute_complex_from_graph_path(
             path, fake_poset, fake_inclusion_graph
         )
         mock_result = gudhi.SimplexTree()
@@ -337,6 +361,84 @@ class Test_compute_complex_from_graph_path(unittest.TestCase):
         self.assertListEqual(
             list(result.get_filtration()), list(mock_result.get_filtration())
         )
+
+    def test_PathAcrossUnionsNoWeights_ReturnListOfSteps(self):
+        """Test that alpha values process correctly for the list of steps"""
+        fake_poset = nx.DiGraph()
+        fake_poset.add_node(("A", 0.0))
+        fake_poset.add_node(("A", 1.0))
+        fake_poset.add_node(("A", np.inf))
+        fake_poset.add_weighted_edges_from(
+            [(("A", 0.0), ("A", 1.0), 1.0), (("A", 1.0), ("A", np.inf), np.inf)]
+        )
+        fake_poset.add_node(("A", "B", 0.0))
+        fake_poset.add_node(("A", "B", 1.0))
+        fake_poset.add_node(("A", "B", np.inf))
+        fake_poset.add_weighted_edges_from(
+            [
+                (("A", "B", 0.0), ("A", "B", 1.0), 1.0),
+                (("A", "B", 1.0), ("A", "B", np.inf), np.inf),
+            ]
+        )
+        fake_poset.add_weighted_edges_from(
+            [
+                (("A", 0.0), ("A", "B", 0.0), 0.0),
+                (("A", 1.0), ("A", "B", 1.0), 0.0),
+                (("A", np.inf), ("A", "B", np.inf), 0.0),
+            ]
+        )
+        fake_complex_1 = gudhi.SimplexTree()
+        fake_complex_1.insert([0], 0.0)
+        fake_complex_2 = gudhi.SimplexTree()
+        fake_complex_2.insert([1], 0.0)
+        fake_inclusion_graph = nx.DiGraph()
+        fake_inclusion_graph.add_node(("A",), simplex=fake_complex_1)
+        fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
+        fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=0.0)
+        path = [("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)]
+        _, result_list_of_steps, _ = poset_landscapes.compute_complex_from_graph_path(
+            path, fake_poset, fake_inclusion_graph
+        )
+        self.assertListEqual(result_list_of_steps, [1.0])
+
+    def test_PathAcrossUnionsNoWeights_ReturnListOfStepWeights(self):
+        """Test that alpha values process correctly for the list of step weights"""
+        fake_poset = nx.DiGraph()
+        fake_poset.add_node(("A", 0.0))
+        fake_poset.add_node(("A", 1.0))
+        fake_poset.add_node(("A", np.inf))
+        fake_poset.add_weighted_edges_from(
+            [(("A", 0.0), ("A", 1.0), 1.0), (("A", 1.0), ("A", np.inf), np.inf)]
+        )
+        fake_poset.add_node(("A", "B", 0.0))
+        fake_poset.add_node(("A", "B", 1.0))
+        fake_poset.add_node(("A", "B", np.inf))
+        fake_poset.add_weighted_edges_from(
+            [
+                (("A", "B", 0.0), ("A", "B", 1.0), 1.0),
+                (("A", "B", 1.0), ("A", "B", np.inf), np.inf),
+            ]
+        )
+        fake_poset.add_weighted_edges_from(
+            [
+                (("A", 0.0), ("A", "B", 0.0), 0.0),
+                (("A", 1.0), ("A", "B", 1.0), 0.0),
+                (("A", np.inf), ("A", "B", np.inf), 0.0),
+            ]
+        )
+        fake_complex_1 = gudhi.SimplexTree()
+        fake_complex_1.insert([0], 0.0)
+        fake_complex_2 = gudhi.SimplexTree()
+        fake_complex_2.insert([1], 0.0)
+        fake_inclusion_graph = nx.DiGraph()
+        fake_inclusion_graph.add_node(("A",), simplex=fake_complex_1)
+        fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
+        fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=0.0)
+        path = [("A", 0.0), ("A", 1.0), ("A", "B", 1.0), ("A", "B", np.inf)]
+        _, _, list_of_step_weights = poset_landscapes.compute_complex_from_graph_path(
+            path, fake_poset, fake_inclusion_graph
+        )
+        self.assertListEqual(list_of_step_weights, [0.0])
 
     def test_PathAcrossUnionsWithWeights_ReturnAppropriateComplex(self):
         """Test edge weights process correctly"""
@@ -372,7 +474,7 @@ class Test_compute_complex_from_graph_path(unittest.TestCase):
         fake_inclusion_graph.add_node(("A", "B"), simplex=fake_complex_2)
         fake_inclusion_graph.add_edge(("A",), ("A", "B"), weight=1.0)
         path = [("A", 0.0), ("A", "B", 0.0), ("A", "B", 1.0), ("A", "B", np.inf)]
-        result = poset_landscapes.compute_complex_from_graph_path(
+        result, _, _ = poset_landscapes.compute_complex_from_graph_path(
             path, fake_poset, fake_inclusion_graph
         )
         mock_result = gudhi.SimplexTree()
@@ -439,7 +541,7 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
             np.testing.assert_allclose(result[path_3]["grid"], fake_grid_01)
 
     def test_GivenPoset_CheckTwoPaths(self):
-        """Test alpha = 1 and alpha = 0 paths"""
+        """Test alpha = 0 and alpha = 1 paths"""
         fake_poset = create_fake_poset()
         fake_inclusion_graph = nx.DiGraph()
         fake_complex_1 = gudhi.SimplexTree()
@@ -462,9 +564,9 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
             fake_landscapes_1 = np.array(
                 [
                     [
-                        [0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.0],
-                        [0, 0.5, 1.0, 0.5, 1.0, 0.5, 0.0],
-                        [0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0],
+                        [0.0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.0],
+                        [0.0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.0],
+                        [0.0, 0.5, 1.0, 0.5, 0.0, 0.0, 0.0],
                     ]
                 ]
             )
@@ -476,7 +578,7 @@ class Test_landscapes_for_all_paths(unittest.TestCase):
                 [
                     [
                         [0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.0],
-                        [0, 0.5, 0.0, 0.0, 0.0, 0.5, 0.0],
+                        [0, 0.5, 0.0, 0.5, 1.0, 0.5, 0.0],
                         [0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                     ]
                 ]

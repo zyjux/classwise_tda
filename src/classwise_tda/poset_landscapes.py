@@ -1,5 +1,6 @@
 """Compute generalized persistence landscapes on poset persistence modules"""
 
+import math
 from operator import itemgetter
 from typing import Any, Optional, Union
 
@@ -112,7 +113,7 @@ def compute_complex_from_graph_path(
     path: list[setup_utils.POSET_NODE_TYPE],
     poset_graph: nx.DiGraph,
     inclusion_graph: nx.DiGraph,
-) -> gudhi.SimplexTree:
+) -> tuple[gudhi.SimplexTree, list[float], list[float]]:
     """
     Creates path simplicial complex for a given path in poset graph
 
@@ -132,6 +133,10 @@ def compute_complex_from_graph_path(
     ---
     gudhi.SimplexTree : Filtered simplicial complex corresponding to the given path
     through the poset graph.
+
+    list of floats : List of filtration values (unadjusted) at which steps occur.
+
+    list of floats : List of weights for the step edges.
     """
     # Check that the path is actually a path
     if not nx.is_simple_path(poset_graph, path):
@@ -153,8 +158,10 @@ def compute_complex_from_graph_path(
     list_of_step_weights = [
         poset_graph.edges[edge]["weight"] for edge in list_of_step_edges
     ]
-    return arbitrary_path_complex(
-        list_of_complexes, list_of_steps, list_of_step_weights
+    return (
+        arbitrary_path_complex(list_of_complexes, list_of_steps, list_of_step_weights),
+        list_of_steps,
+        list_of_step_weights,
     )
 
 
@@ -245,8 +252,8 @@ def landscapes_for_all_paths(
     # Compute simplicial complexes and landscapes for all paths
     landscape_path_dict = dict()
     for path in tqdm(path_set):
-        path_complex = compute_complex_from_graph_path(
-            path[::-1], poset_graph, inclusion_graph
+        path_complex, list_of_steps, list_of_step_weights = (
+            compute_complex_from_graph_path(path[::-1], poset_graph, inclusion_graph)
         )
         max_filtration_value = list(path_complex.get_filtration())[-1][-1]
         path_complex.compute_persistence(homology_coeff_field=homology_coeff_field)
@@ -254,6 +261,20 @@ def landscapes_for_all_paths(
             path_complex.persistence_intervals_in_dimension(i)
             for i in range(max_dim + 1)
         ]
+        # Fix persistence for elements created right after a step
+        for diagram in path_diagrams:
+            for step_num in range(len(list_of_steps)):
+                adjusted_end_step_filt_value = sum(
+                    list_of_steps[: step_num + 1] + list_of_step_weights[: step_num + 1]
+                )
+                indices_to_be_corrected = np.nonzero(
+                    np.isclose(diagram[:, 0], adjusted_end_step_filt_value)
+                )
+                np.subtract.at(
+                    diagram[:, 0],
+                    indices_to_be_corrected,
+                    list_of_step_weights[step_num],
+                )
         # Truncate infinite value at max filtration value
         path_diagrams[0][-1, 1] = max_filtration_value
         lscape = greps.Landscape(
