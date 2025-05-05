@@ -1,15 +1,8 @@
-"""Demo script to compute P-landscapes for two half ring dataset"""
+"""Demo script to compute P-landscapes for simple example"""
 
 import xarray as xr
 
 from classwise_tda import poset_landscapes, visualization
-
-SAMPLING_RATIO = 5
-
-ds = xr.open_dataset("~/classwise_tda/data/half_rings_synth_dataset.nc")
-
-unified_points = xr.concat([ds["top_ring"], ds["bottom_ring"]], dim="index")
-unified_points = unified_points.isel({"index": slice(None, None, SAMPLING_RATIO)})
 
 unified_points = xr.DataArray(
     [
