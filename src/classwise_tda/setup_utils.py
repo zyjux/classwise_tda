@@ -145,6 +145,7 @@ def extract_filt_values_from_persistence(
         except NameError:
             birth_death_array = simplicial_complex.persistence_intervals_in_dimension(i)
     midpoints = (birth_death_array[:, 1] + birth_death_array[:, 0]) / 2
+    midpoints = np.linspace(0, 2.4, 100)
     return np.unique(np.concatenate([np.ravel(birth_death_array), midpoints]))
 
 
