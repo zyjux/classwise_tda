@@ -565,3 +565,115 @@ def discretize_poset_graph_landscapes(
         coords={"union": unions_as_strings, "filt_vals": grid},
     )
     return array
+
+
+def find_upper_and_lower_neighbors_in_sorted_list(
+    value: float, sorted_list: list[float]
+) -> Union[tuple[float, float], tuple[float]]:
+    """Helper routine to find upper and lower neighbors for a given value in a list"""
+    if value <= sorted_list[0]:
+        return (sorted_list[0],)
+    for i in range(1, len(sorted_list)):
+        if sorted_list[i] > value:
+            return (sorted_list[i - 1], sorted_list[i])
+        elif sorted_list[i] == value:
+            return (sorted_list[i],)
+    return (sorted_list[-1],)
+
+
+def compute_exact_landscape_value(
+    filt_value: float,
+    union: tuple[str, ...],
+    poset_graph: nx.DiGraph,
+    path_dict: dict,
+    union_list_of_filt_values: Optional[list[float]] = None,
+):
+    """Compute generalized poset landscape value at any point in the poset"""
+    if union_list_of_filt_values is None:
+        union_list_of_filt_values = [
+            node[-1] for node in poset_graph.nodes if node[:-1] == union
+        ]
+        union_list_of_filt_values = sorted(union_list_of_filt_values)
+    if filt_value in union_list_of_filt_values:
+        neighboring_nodes = {(*union, filt_value)}
+    else:
+        closest_filt_values = find_upper_and_lower_neighbors_in_sorted_list(
+            filt_value, union_list_of_filt_values
+        )
+        neighboring_nodes = {(*union, value) for value in closest_filt_values}
+    paths_through_point = {
+        key: path_dict[key] for key in path_dict.keys() if neighboring_nodes <= set(key)
+    }
+
+    point_landscape_values = []
+    for path, path_landscape_dict in paths_through_point.items():
+        # Find filtration value offset
+        step_edges_up_to_point = []
+        for i in range(len(path) - 1):
+            if path[i][:-1] == union:
+                break
+            if path[i][:-1] != path[i + 1][:-1]:
+                step_edges_up_to_point.append((path[i], path[i + 1]))
+        step_edge_weights = [
+            poset_graph.edges[edge]["weight"] for edge in step_edges_up_to_point
+        ]
+        filt_val_offset = sum(step_edge_weights)
+
+        x_grid = path_landscape_dict["grid"]
+        landscapes = path_landscape_dict["landscapes"]
+        point_landscapes = np.empty(landscapes.shape[:-1])
+
+        for homology_dim in range(landscapes.shape[0]):
+            for k in range(landscapes.shape[1]):
+                point_landscapes[homology_dim, k] = np.interp(
+                    filt_value + filt_val_offset,
+                    x_grid,
+                    landscapes[homology_dim, k, :],
+                )
+
+        point_landscape_values.append(point_landscapes)
+
+    return np.min(point_landscape_values, axis=0)
+
+
+def discretize_poset_landscapes_from_dict(
+    poset_graph: nx.DiGraph, path_landscapes: dict, resolution: int
+) -> xr.DataArray:
+    unions = list({node[:-1] for node in poset_graph.nodes})
+    unions.sort()
+    extracted_values = {
+        union: extract_landscape_and_filt_vals_from_union(poset_graph, union)
+        for union in unions
+    }
+    unshaped_filt_vals = np.concatenate(
+        [np.ravel(values[0]) for values in extracted_values.values()]
+    )
+    min_filt_val = unshaped_filt_vals[np.isfinite(unshaped_filt_vals)].min()
+    max_filt_val = unshaped_filt_vals[np.isfinite(unshaped_filt_vals)].max()
+
+    min_filt_val = unshaped_filt_vals[np.isfinite(unshaped_filt_vals)].min()
+    max_filt_val = unshaped_filt_vals[np.isfinite(unshaped_filt_vals)].max()
+
+    grid = np.linspace(min_filt_val, max_filt_val, resolution)
+    output_shape = (
+        len(unions),
+        extracted_values[unions[0]][1].shape[1],
+        extracted_values[unions[0]][1].shape[2],
+        resolution,
+    )
+    raw_interpolated_array = np.empty(output_shape, dtype=float)
+
+    for i, union in enumerate(unions):
+        sorted_union_filt_values = sorted(extracted_values[union][0])
+        for j, filt_val in enumerate(grid):
+            raw_interpolated_array[i, :, :, j] = compute_exact_landscape_value(
+                filt_val, union, poset_graph, path_landscapes, sorted_union_filt_values
+            )
+
+    unions_as_strings = [" U ".join(union) for union in unions]
+    array = xr.DataArray(
+        raw_interpolated_array,
+        dims=("union", "homology_dimension", "landscape_func", "filt_vals"),
+        coords={"union": unions_as_strings, "filt_vals": grid},
+    )
+    return array

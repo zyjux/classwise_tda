@@ -931,3 +931,53 @@ class Test_discretize_poset_graph_landscapes(unittest.TestCase):
             np.testing.assert_allclose(
                 result.sel({"union": "A U B"}), mock_class_AUB_interpolation
             )
+
+
+class Test_find_upper_and_lower_neighbors_in_sorted_list(unittest.TestCase):
+    def test_ValueBelowFirstInList_ReturnFirstValueInList(self):
+        fake_list = [0.0, 1.0, 2.0]
+        fake_value = -1.0
+        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
+            fake_value, fake_list
+        )
+        self.assertTupleEqual((0.0,), result)
+
+    def test_ValueEqualsFirstInList_ReturnFirstValueInList(self):
+        fake_list = [0.0, 1.0, 2.0]
+        fake_value = 0.0
+        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
+            fake_value, fake_list
+        )
+        self.assertTupleEqual((0.0,), result)
+
+    def test_ValueAboveLastInList_ReturnLastValueInList(self):
+        fake_list = [0.0, 1.0, 2.0]
+        fake_value = 3.0
+        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
+            fake_value, fake_list
+        )
+        self.assertTupleEqual((2.0,), result)
+
+    def test_ValueBetweenListItems_ReturnNeighboringValues(self):
+        fake_list = [0.0, 1.0, 2.0]
+        fake_value = 0.5
+        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
+            fake_value, fake_list
+        )
+        self.assertTupleEqual((0.0, 1.0), result)
+
+    def test_ValueEqualsListItem_ReturnItem(self):
+        fake_list = [0.0, 1.0, 2.0]
+        fake_value = 1.0
+        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
+            fake_value, fake_list
+        )
+        self.assertTupleEqual((1.0,), result)
+
+    def test_ValueAboveLastFiniteWithInfiniteEnd_ReturnInfiniteTop(self):
+        fake_list = [0.0, 1.0, np.inf]
+        fake_value = 2.0
+        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
+            fake_value, fake_list
+        )
+        self.assertTupleEqual((1.0, np.inf), result)
