@@ -4,7 +4,7 @@ import xarray as xr
 
 from classwise_tda import poset_landscapes, visualization
 
-SAMPLING_RATIO = 5
+SAMPLING_RATIO = 2
 
 ds = xr.open_dataset("/nfs/home/lverho/classwise_tda/data/two_ring_synth_dataset.nc")
 
@@ -20,8 +20,8 @@ B_slice = slice(
     ),
 )
 weights = {
-    (("inner",), ("inner", "outer")): 0.0,
-    (("outer",), ("inner", "outer")): 0.0,
+    (("inner",), ("inner", "outer")): 0.5,
+    (("outer",), ("inner", "outer")): 0.5,
 }
 poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_poset(
     data_points=unified_points.values,
@@ -29,13 +29,12 @@ poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_pose
     class_weights=weights,
     homology_coeff_field=2,
     return_inclusion_graph=True,
+    output_landscape_resolution=98,
     path_landscape_resolution=100000,
 )
 
-landscape_array = poset_landscapes.create_poset_landscape_array(poset_graph, 100)
+landscape_array = poset_landscapes.create_poset_landscape_array(poset_graph)
 
 F, ax = visualization.plot_all_landscapes(landscape_array, grid_layout=(3, 1))
 
-F.savefig(
-    "/nfs/home/lverho/classwise_tda/figures/inner_outer_ring_landscapes_weight_0.png"
-)
+F.savefig("/nfs/home/lverho/classwise_tda/figures/two_ring_landscapes_weight_0.5.png")

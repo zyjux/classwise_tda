@@ -41,10 +41,11 @@ poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_pose
     class_weights=weights,
     homology_coeff_field=2,
     return_inclusion_graph=True,
+    output_landscape_resolution=98,
     path_landscape_resolution=1000,
 )
 
-landscape_array = poset_landscapes.create_poset_landscape_array(poset_graph, 100)
+landscape_array = poset_landscapes.create_poset_landscape_array(poset_graph)
 
 F, ax = visualization.plot_all_landscapes(landscape_array, grid_layout=(3, 1))
 
