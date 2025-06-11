@@ -394,7 +394,7 @@ def compute_classwise_landscape_poset(
     landscape_max_dim: int = -1,
     homology_coeff_field: int = 11,
     num_landscapes: int = 5,
-    output_landscape_resolution: int = 98,
+    output_landscape_resolution: int = 100,
     path_landscape_resolution: int = 100,
     return_inclusion_graph: bool = False,
 ) -> Union[nx.DiGraph, tuple[nx.DiGraph, nx.DiGraph]]:
