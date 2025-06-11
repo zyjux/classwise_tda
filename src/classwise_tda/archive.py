@@ -1,5 +1,13 @@
 """Module with unused code from previous versions of the algorithm"""
 
+from operator import itemgetter
+from typing import Optional, Union
+
+import gudhi
+import networkx as nx
+import numpy as np
+import xarray as xr
+
 
 ### From poset_landscapes
 def find_upper_and_lower_neighbors_in_sorted_list(
