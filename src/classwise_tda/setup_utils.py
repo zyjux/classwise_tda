@@ -126,37 +126,19 @@ def add_classwise_complexes(
     return inclusion_graph
 
 
-def extract_filt_values_from_persistence(
-    simplicial_complex: gudhi.SimplexTree,
-) -> np.ndarray:
-    """Extract all unique filtration values that are a birth or death value"""
-    max_dim = simplicial_complex.upper_bound_dimension()
-    if not simplicial_complex._is_persistence_defined():
-        simplicial_complex.compute_persistence()
-    for i in range(max_dim + 1):
-        try:
-            birth_death_array = np.concatenate(
-                [
-                    birth_death_array,
-                    simplicial_complex.persistence_intervals_in_dimension(i),
-                ],
-                axis=0,
-            )
-        except NameError:
-            birth_death_array = simplicial_complex.persistence_intervals_in_dimension(i)
-    midpoints = (birth_death_array[:, 1] + birth_death_array[:, 0]) / 2
-    midpoints = np.linspace(0, 2.4, 100)
-    return np.unique(np.concatenate([np.ravel(birth_death_array), midpoints]))
-
-
-def create_full_poset_graph(inclusion_graph: nx.DiGraph) -> nx.DiGraph:
-    """Create full poset graph from inclusion graph and PH information
+def create_full_poset_graph(
+    inclusion_graph: nx.DiGraph, finite_nodes_per_union: int = 100
+) -> nx.DiGraph:
+    """Create full poset graph from inclusion graph
 
     Arguments
     ---
     inclusion_graph : networkx.DiGraph
-    Inclusion graph showing the inclusion structure for all classes. Must have had
-    simplicial complexes already defined using add_classwise_complexes.
+    Inclusion graph showing the inclusion structure for all classes. Must have filtered
+    simplicial complex for each node under the "simplex" key.
+
+    finite_nodes_per_union : int
+    How many nodes to add per ray. Excludes infinite filtration value nodes.
 
     Returns
     ---
@@ -167,62 +149,43 @@ def create_full_poset_graph(inclusion_graph: nx.DiGraph) -> nx.DiGraph:
     tuple is the same as the node tuple from the inclusion graph with the filtration
     value appended.
 
-    Nodes exist at every filtration value important to: the union of classes being
-    considered and all predecessors and successors of that node in the inclusion graph.
-    Edges are directed in increasing filtration values, and across classes and unions
-    in the orientation from the inclusion graph.
+    Nodes exist at nodes_per_union evenly spaced filtration values between the minimum
+    and maximum filtration values across all unions, plus at -inf and +inf.
     """
 
     # Add filtration value information to nodes
+    max_filt_value = -np.inf
+    min_filt_value = np.inf
     for node in inclusion_graph.nodes:
         try:
-            inclusion_graph.nodes[node]["filt_values"] = (
-                extract_filt_values_from_persistence(
-                    inclusion_graph.nodes[node]["simplex"]
-                )
-            )
+            node_complex = list(inclusion_graph.nodes[node]["simplex"].get_filtration())
+            max_filt_value = max(max_filt_value, node_complex[-1][-1])
+            min_filt_value = min(min_filt_value, node_complex[0][-1])
         except KeyError as e:
             e.add_note("Inclusion graph must have its simplicial complexes added")
             raise
 
     poset_graph = nx.DiGraph()
 
+    filtration_values = np.linspace(
+        min_filt_value, max_filt_value, finite_nodes_per_union
+    )
+    filtration_values = np.concatenate([[-np.inf], filtration_values, [np.inf]])
+
     # Compute complete list of filtration values
     for node in inclusion_graph.nodes:
-        inclusion_graph.nodes[node]["complete_filt_vals"] = np.unique(
-            np.concatenate(
-                [inclusion_graph.nodes[node]["filt_values"]]
-                + [
-                    inclusion_graph.nodes[predecessor]["filt_values"]
-                    for predecessor in inclusion_graph.predecessors(node)
-                ]
-                + [
-                    inclusion_graph.nodes[successor]["filt_values"]
-                    for successor in inclusion_graph.successors(node)
-                ]
-            )
-        )
-        these_complete_filt_vals = inclusion_graph.nodes[node]["complete_filt_vals"]
         poset_graph.add_nodes_from(
-            [(*node, filt_val) for filt_val in these_complete_filt_vals]
+            [(*node, filt_val) for filt_val in filtration_values]
         )
-        for i in range(these_complete_filt_vals.shape[0] - 1):
+        for i in range(filtration_values.shape[0] - 1):
             poset_graph.add_edge(
-                (*node, these_complete_filt_vals[i]),
-                (*node, these_complete_filt_vals[i + 1]),
-                weight=these_complete_filt_vals[i + 1] - these_complete_filt_vals[i],
+                (*node, filtration_values[i]),
+                (*node, filtration_values[i + 1]),
+                weight=filtration_values[i + 1] - filtration_values[i],
             )
 
     for inclusion_edge in inclusion_graph.edges:
-        these_filt_vals = np.unique(
-            np.concatenate(
-                [
-                    inclusion_graph.nodes[inclusion_edge[0]]["filt_values"],
-                    inclusion_graph.nodes[inclusion_edge[1]]["filt_values"],
-                ]
-            )
-        )
-        for filt_val in these_filt_vals:
+        for filt_val in filtration_values:
             poset_graph.add_edge(
                 (*inclusion_edge[0], filt_val),
                 (*inclusion_edge[1], filt_val),

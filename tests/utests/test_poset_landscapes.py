@@ -63,11 +63,13 @@ def create_fake_union_class() -> gudhi.SimplexTree:
 
 def create_fake_poset_with_landscapes() -> nx.DiGraph:
     graph = nx.DiGraph()
+    graph.add_node(("A", -np.inf), landscape_values=np.zeros((2, 3), dtype=float))
     graph.add_node(("A", 0.0), landscape_values=np.zeros((2, 3), dtype=float))
     graph.add_node(("A", 1.0), landscape_values=np.ones((2, 3), dtype=float))
     graph.add_node(("A", np.inf), landscape_values=2 * np.ones((2, 3), dtype=float))
+    graph.add_node(("A", "B", -np.inf), landscape_values=np.zeros((2, 3), dtype=float))
     graph.add_node(("A", "B", 0.0), landscape_values=np.zeros((2, 3), dtype=float))
-    graph.add_node(("A", "B", 2.0), landscape_values=2 * np.ones((2, 3), dtype=float))
+    graph.add_node(("A", "B", 1.0), landscape_values=2 * np.ones((2, 3), dtype=float))
     graph.add_node(
         ("A", "B", np.inf), landscape_values=4 * np.ones((2, 3), dtype=float)
     )
@@ -834,94 +836,37 @@ class add_landscape_values_to_poset_graph(unittest.TestCase):
                 self.assertEqual(result.nodes[node]["landscape_values"].item(), 0.0)
 
 
-class Test_extract_landscape_and_filt_vals_from_union(unittest.TestCase):
-    def test_GivenGraphClassA_ExtractCorrectFiltVals(self):
-        """Check filtration values for one-class union in fake poset graph"""
-        fake_poset_graph = create_fake_poset_with_landscapes()
-        result = poset_landscapes.extract_landscape_and_filt_vals_from_union(
-            fake_poset_graph, ("A",)
-        )
-        mock_result = np.array([0.0, 1.0, np.inf])
-        np.testing.assert_allclose(result[0], mock_result)
-
-    def test_GivenGraphUnionClass_ExtractCorrectFiltVals(self):
-        """Check filtration values for two-class union in fake poset graph"""
-        fake_poset_graph = create_fake_poset_with_landscapes()
-        result = poset_landscapes.extract_landscape_and_filt_vals_from_union(
-            fake_poset_graph, ("A", "B")
-        )
-        mock_result = np.array([0.0, 2.0, np.inf])
-        np.testing.assert_allclose(result[0], mock_result)
-
-    def test_UnionClassNotInGraph_RaiseValueError(self):
-        """Check that function raises an error if an invalid union is specified"""
-        fake_poset_graph = create_fake_poset_with_landscapes()
-        with self.assertRaises(ValueError):
-            _ = poset_landscapes.extract_landscape_and_filt_vals_from_union(
-                fake_poset_graph, ("B",)
-            )
-
-    def test_GivenGraphClassA_ExtractCorrectLandscapeVals(self):
-        """Test that function returns correct landscape values"""
-        fake_poset_graph = create_fake_poset_with_landscapes()
-        result = poset_landscapes.extract_landscape_and_filt_vals_from_union(
-            fake_poset_graph, ("A",)
-        )
-        mock_result = np.stack(
-            [
-                np.zeros((2, 3), dtype=float),
-                np.ones((2, 3), dtype=float),
-                2 * np.ones((2, 3), dtype=float),
-            ],
-            axis=0,
-        )
-        np.testing.assert_allclose(result[1], mock_result)
-
-
-class Test_discretize_poset_graph_landscapes(unittest.TestCase):
+class Test_create_poset_landscape_array(unittest.TestCase):
     def test_GivenGraph_OutputIsCorrectShape(self):
         """Check that function returns an array of the correct shape"""
         fake_poset_graph = create_fake_poset_with_landscapes()
-        resolution = 10
-        result = poset_landscapes.discretize_poset_graph_landscapes(
-            fake_poset_graph, resolution
-        )
-        mock_shape = [2, 2, 3, 10]
+        result = poset_landscapes.create_poset_landscape_array(fake_poset_graph)
+        mock_shape = [2, 2, 3, 2]
         self.assertListEqual(list(result.shape), mock_shape)
 
     def test_GivenGraph_CorrectDiscretizationGrid(self):
         """Check that the discretization grid coordinates are correct"""
         fake_poset_graph = create_fake_poset_with_landscapes()
-        resolution = 5
-        result = poset_landscapes.discretize_poset_graph_landscapes(
-            fake_poset_graph, resolution
-        )
-        mock_grid = np.array([0, 0.5, 1.0, 1.5, 2.0])
+        result = poset_landscapes.create_poset_landscape_array(fake_poset_graph)
+        mock_grid = np.array([0.0, 1.0])
         np.testing.assert_allclose(result["filt_vals"], mock_grid)
 
     def test_GivenGraph_CorrectUnionLabels(self):
         """Check that the union label strings are created and ordered correctly"""
         fake_poset_graph = create_fake_poset_with_landscapes()
-        resolution = 5
-        result = poset_landscapes.discretize_poset_graph_landscapes(
-            fake_poset_graph, resolution
-        )
+        result = poset_landscapes.create_poset_landscape_array(fake_poset_graph)
         mock_coords = np.array(["A", "A U B"])
         np.testing.assert_array_equal(result["union"], mock_coords)
 
-    def test_GivenGraph_CorrectInterpolationValues(self):
+    def test_GivenGraph_CorrectValues(self):
         """Check that the interpolation is performed correctly"""
         fake_poset_graph = create_fake_poset_with_landscapes()
-        resolution = 3
-        result = poset_landscapes.discretize_poset_graph_landscapes(
-            fake_poset_graph, resolution
-        )
+        result = poset_landscapes.create_poset_landscape_array(fake_poset_graph)
         mock_class_A_interpolation = np.stack(
-            [np.zeros((2, 3), dtype=float), np.ones((2, 3)), np.ones((2, 3))], axis=-1
+            [np.zeros((2, 3), dtype=float), np.ones((2, 3), dtype=float)], axis=-1
         )
         mock_class_AUB_interpolation = np.stack(
-            [np.zeros((2, 3), dtype=float), np.ones((2, 3)), 2 * np.ones((2, 3))],
-            axis=-1,
+            [np.zeros((2, 3), dtype=float), 2 * np.ones((2, 3), dtype=float)], axis=-1
         )
         with self.subTest(union="A"):
             np.testing.assert_allclose(
@@ -931,53 +876,3 @@ class Test_discretize_poset_graph_landscapes(unittest.TestCase):
             np.testing.assert_allclose(
                 result.sel({"union": "A U B"}), mock_class_AUB_interpolation
             )
-
-
-class Test_find_upper_and_lower_neighbors_in_sorted_list(unittest.TestCase):
-    def test_ValueBelowFirstInList_ReturnFirstValueInList(self):
-        fake_list = [0.0, 1.0, 2.0]
-        fake_value = -1.0
-        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
-            fake_value, fake_list
-        )
-        self.assertTupleEqual((0.0,), result)
-
-    def test_ValueEqualsFirstInList_ReturnFirstValueInList(self):
-        fake_list = [0.0, 1.0, 2.0]
-        fake_value = 0.0
-        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
-            fake_value, fake_list
-        )
-        self.assertTupleEqual((0.0,), result)
-
-    def test_ValueAboveLastInList_ReturnLastValueInList(self):
-        fake_list = [0.0, 1.0, 2.0]
-        fake_value = 3.0
-        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
-            fake_value, fake_list
-        )
-        self.assertTupleEqual((2.0,), result)
-
-    def test_ValueBetweenListItems_ReturnNeighboringValues(self):
-        fake_list = [0.0, 1.0, 2.0]
-        fake_value = 0.5
-        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
-            fake_value, fake_list
-        )
-        self.assertTupleEqual((0.0, 1.0), result)
-
-    def test_ValueEqualsListItem_ReturnItem(self):
-        fake_list = [0.0, 1.0, 2.0]
-        fake_value = 1.0
-        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
-            fake_value, fake_list
-        )
-        self.assertTupleEqual((1.0,), result)
-
-    def test_ValueAboveLastFiniteWithInfiniteEnd_ReturnInfiniteTop(self):
-        fake_list = [0.0, 1.0, np.inf]
-        fake_value = 2.0
-        result = poset_landscapes.find_upper_and_lower_neighbors_in_sorted_list(
-            fake_value, fake_list
-        )
-        self.assertTupleEqual((1.0, np.inf), result)

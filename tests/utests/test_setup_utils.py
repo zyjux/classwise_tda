@@ -271,218 +271,189 @@ class Test_add_classwise_complexes(unittest.TestCase):
         )
 
 
-class Test_extract_filt_values_from_persistence(unittest.TestCase):
-    def test_OneEdgeAtFilt2_ReturnZeroOneTwoInf(self):
-        fake_complex = gudhi.SimplexTree()
-        fake_complex.insert([0], 0.0)
-        fake_complex.insert([1], 0.0)
-        fake_complex.insert([0, 1], 2.0)
-        result = setup_utils.extract_filt_values_from_persistence(fake_complex)
-        np.testing.assert_allclose(result, np.array([0.0, 1.0, 2.0, np.inf]))
-
-    def test_OneEdgeAtTwoOneVertexAt1_ReturnEndAndMidPoints(self):
-        fake_complex = gudhi.SimplexTree()
-        fake_complex.insert([0], 0.0)
-        fake_complex.insert([1], 1.0)
-        fake_complex.insert([0, 1], 2.0)
-        result = setup_utils.extract_filt_values_from_persistence(fake_complex)
-        np.testing.assert_allclose(result, np.array([0.0, 1.0, 1.5, 2.0, np.inf]))
-
-    def test_TriangleAt2EdgesAt1VerticesAt0_ReturnEndAndMidPoints(self):
-        fake_complex = gudhi.SimplexTree()
-        fake_complex.insert([0], 0.0)
-        fake_complex.insert([1], 0.0)
-        fake_complex.insert([2], 0.0)
-        fake_complex.insert([0, 1], 1.0)
-        fake_complex.insert([0, 2], 1.0)
-        fake_complex.insert([1, 2], 1.0)
-        fake_complex.insert([0, 1, 2], 2.0)
-        result = setup_utils.extract_filt_values_from_persistence(fake_complex)
-        np.testing.assert_allclose(result, np.array([0.0, 0.5, 1.0, 1.5, 2.0, np.inf]))
-
-
 class Test_create_full_poset_graph(unittest.TestCase):
     def test_NoSimplicialComplexes_RaisesKeyError(self):
         fake_inclusion_graph = nx.DiGraph()
         fake_inclusion_graph.add_node(("A",))
         with self.assertRaises(KeyError):
-            setup_utils.create_full_poset_graph(fake_inclusion_graph)
+            _ = setup_utils.create_full_poset_graph(fake_inclusion_graph)
 
-    def test_OneClassOneEdge_ProducesGivenPathGraphNodes(self):
+    def test_Filts0to2SingleClass_ExpectedNodes(self):
+        fake_simplex = gudhi.SimplexTree()
+        fake_simplex.insert([0], 0.0)
+        fake_simplex.insert([1], 2.0)
         fake_inclusion_graph = nx.DiGraph()
-        fake_inclusion_graph.add_node(("A",))
-        fake_inclusion_graph.nodes[("A",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 2.0)
-        result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
-        mock_result_nodes = [("A", 0.0), ("A", 1.0), ("A", 2.0), ("A", np.inf)]
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex)
+        nodes_per_union = 3
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=nodes_per_union
+        )
+        mock_result_nodes = [
+            ("A", -np.inf),
+            ("A", 0.0),
+            ("A", 1.0),
+            ("A", 2.0),
+            ("A", np.inf),
+        ]
         self.assertListEqual(list(result.nodes), mock_result_nodes)
 
-    def test_OneClassOneEdge_ProducesGivenPathGraphEdges(self):
+    def test_Filts0to2SingleClass_ExpectedEdges(self):
+        fake_simplex = gudhi.SimplexTree()
+        fake_simplex.insert([0], 0.0)
+        fake_simplex.insert([1], 2.0)
         fake_inclusion_graph = nx.DiGraph()
-        fake_inclusion_graph.add_node(("A",))
-        fake_inclusion_graph.nodes[("A",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 2.0)
-        result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex)
+        nodes_per_union = 3
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=nodes_per_union
+        )
         mock_result_edges = [
+            (("A", -np.inf), ("A", 0.0)),
             (("A", 0.0), ("A", 1.0)),
             (("A", 1.0), ("A", 2.0)),
             (("A", 2.0), ("A", np.inf)),
         ]
         self.assertListEqual(list(result.edges), mock_result_edges)
 
-    def test_TwoClassesAllDifferentFiltVals_ExpectedNodes(self):
+    def test_Filts0to2SingleClass_EdgeWeightsCorrect(self):
+        fake_simplex = gudhi.SimplexTree()
+        fake_simplex.insert([0], 0.0)
+        fake_simplex.insert([1], 2.0)
         fake_inclusion_graph = nx.DiGraph()
-        fake_inclusion_graph.add_nodes_from([("A",), ("B",), ("A", "B")])
-        fake_inclusion_graph.add_weighted_edges_from(
-            [
-                (("A",), ("A", "B"), None),
-                (("B",), ("A", "B"), None),
-            ],
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex)
+        nodes_per_union = 3
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=nodes_per_union
         )
-        fake_inclusion_graph.nodes[("A",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 1.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([2], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([3], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([2, 3], 2.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([4], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([5], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([4, 5], 3.0)
-        result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
-        mock_result_nodes = {
+        with self.subTest():
+            edge = (("A", -np.inf), ("A", 0.0))
+            self.assertEqual(result.edges[edge]["weight"], np.inf)
+        with self.subTest():
+            edge = (("A", 0.0), ("A", 1.0))
+            self.assertEqual(result.edges[edge]["weight"], 1.0)
+        with self.subTest():
+            edge = (("A", 1.0), ("A", 2.0))
+            self.assertEqual(result.edges[edge]["weight"], 1.0)
+        with self.subTest():
+            edge = (("A", 2.0), ("A", np.inf))
+            self.assertEqual(result.edges[edge]["weight"], np.inf)
+
+    def test_Filts0to0SingleClass_OnlyOneFiniteNode(self):
+        fake_simplex = gudhi.SimplexTree()
+        fake_simplex.insert([0], 0.0)
+        fake_simplex.insert([1], 0.0)
+        fake_inclusion_graph = nx.DiGraph()
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex)
+        nodes_per_union = 3
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=nodes_per_union
+        )
+        mock_result_nodes = [
+            ("A", -np.inf),
             ("A", 0.0),
-            ("A", 0.5),
+            ("A", np.inf),
+        ]
+        self.assertListEqual(list(result.nodes), mock_result_nodes)
+
+    def test_TwoClassesDifferentFiltMaxMins_ExpectedNodes(self):
+        fake_simplex_A = gudhi.SimplexTree()
+        fake_simplex_A.insert([0], 0.0)
+        fake_simplex_A.insert([1], 2.0)
+        fake_simplex_B = gudhi.SimplexTree()
+        fake_simplex_B.insert([2], 1.0)
+        fake_simplex_B.insert([3], 3.0)
+        fake_inclusion_graph = nx.DiGraph()
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex_A)
+        fake_inclusion_graph.add_node(("B",), simplex=fake_simplex_B)
+        fake_inclusion_graph.add_edge(("A",), ("B",), weight=1.0)
+        finite_nodes_per_union = 4
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=finite_nodes_per_union
+        )
+        mock_result_nodes = [
+            ("A", -np.inf),
+            ("A", 0.0),
             ("A", 1.0),
-            ("A", 1.5),
+            ("A", 2.0),
             ("A", 3.0),
             ("A", np.inf),
+            ("B", -np.inf),
             ("B", 0.0),
             ("B", 1.0),
-            ("B", 1.5),
             ("B", 2.0),
             ("B", 3.0),
             ("B", np.inf),
-            ("A", "B", 0.0),
-            ("A", "B", 0.5),
-            ("A", "B", 1.0),
-            ("A", "B", 1.5),
-            ("A", "B", 2.0),
-            ("A", "B", 3.0),
-            ("A", "B", np.inf),
-        }
-        self.assertSetEqual(set(result.nodes), mock_result_nodes)
+        ]
+        self.assertListEqual(list(result.nodes), mock_result_nodes)
 
-    def test_TwoClassesAllDifferentFiltVals_ExpectedEdges(self):
+    def test_TwoClassesDifferentFiltMaxMins_ExpectedEdges(self):
+        fake_simplex_A = gudhi.SimplexTree()
+        fake_simplex_A.insert([0], 0.0)
+        fake_simplex_A.insert([1], 2.0)
+        fake_simplex_B = gudhi.SimplexTree()
+        fake_simplex_B.insert([2], 1.0)
+        fake_simplex_B.insert([3], 3.0)
         fake_inclusion_graph = nx.DiGraph()
-        fake_inclusion_graph.add_nodes_from([("A",), ("B",), ("A", "B")])
-        fake_inclusion_graph.add_weighted_edges_from(
-            [
-                (("A",), ("A", "B"), None),
-                (("B",), ("A", "B"), None),
-            ],
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex_A)
+        fake_inclusion_graph.add_node(("B",), simplex=fake_simplex_B)
+        fake_inclusion_graph.add_edge(("A",), ("B",), weight=1.0)
+        finite_nodes_per_union = 4
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=finite_nodes_per_union
         )
-        fake_inclusion_graph.nodes[("A",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 1.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([0, 1], 2.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0, 1], 3.0)
-        result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
         mock_result_edges = {
-            (("A", 0.0), ("A", 0.5)),
-            (("A", 0.5), ("A", 1.0)),
-            (("A", 1.0), ("A", 1.5)),
-            (("A", 1.5), ("A", 3.0)),
+            (("A", -np.inf), ("A", 0.0)),
+            (("A", 0.0), ("A", 1.0)),
+            (("A", 1.0), ("A", 2.0)),
+            (("A", 2.0), ("A", 3.0)),
             (("A", 3.0), ("A", np.inf)),
+            (("B", -np.inf), ("B", 0.0)),
             (("B", 0.0), ("B", 1.0)),
-            (("B", 1.0), ("B", 1.5)),
-            (("B", 1.5), ("B", 2.0)),
+            (("B", 1.0), ("B", 2.0)),
             (("B", 2.0), ("B", 3.0)),
             (("B", 3.0), ("B", np.inf)),
-            (("A", "B", 0.0), ("A", "B", 0.5)),
-            (("A", "B", 0.5), ("A", "B", 1.0)),
-            (("A", "B", 1.0), ("A", "B", 1.5)),
-            (("A", "B", 1.5), ("A", "B", 2.0)),
-            (("A", "B", 2.0), ("A", "B", 3.0)),
-            (("A", "B", 3.0), ("A", "B", np.inf)),
-            (("A", 0.0), ("A", "B", 0.0)),
-            (("A", 0.5), ("A", "B", 0.5)),
-            (("A", 1.0), ("A", "B", 1.0)),
-            (("A", 1.5), ("A", "B", 1.5)),
-            (("A", 3.0), ("A", "B", 3.0)),
-            (("A", np.inf), ("A", "B", np.inf)),
-            (("B", 0.0), ("A", "B", 0.0)),
-            (("B", 1.0), ("A", "B", 1.0)),
-            (("B", 1.5), ("A", "B", 1.5)),
-            (("B", 2.0), ("A", "B", 2.0)),
-            (("B", 3.0), ("A", "B", 3.0)),
-            (("B", np.inf), ("A", "B", np.inf)),
+            (("A", -np.inf), ("B", -np.inf)),
+            (("A", 0.0), ("B", 0.0)),
+            (("A", 1.0), ("B", 1.0)),
+            (("A", 2.0), ("B", 2.0)),
+            (("A", 3.0), ("B", 3.0)),
+            (("A", np.inf), ("B", np.inf)),
         }
         self.assertSetEqual(set(result.edges), mock_result_edges)
 
-    def test_TwoClassesAllDifferentFiltVals_CorrectEdgeWeights(self):
+    def test_TwoClassesDifferentFiltMaxMins_ExpectedEdgeWeights(self):
+        fake_simplex_A = gudhi.SimplexTree()
+        fake_simplex_A.insert([0], 0.0)
+        fake_simplex_A.insert([1], 2.0)
+        fake_simplex_B = gudhi.SimplexTree()
+        fake_simplex_B.insert([2], 1.0)
+        fake_simplex_B.insert([3], 3.0)
         fake_inclusion_graph = nx.DiGraph()
-        fake_inclusion_graph.add_nodes_from([("A",), ("B",), ("A", "B")])
-        fake_inclusion_graph.add_weighted_edges_from(
-            [
-                (("A",), ("A", "B"), 0.5),
-                (("B",), ("A", "B"), 1.5),
-            ],
+        fake_inclusion_graph.add_node(("A",), simplex=fake_simplex_A)
+        fake_inclusion_graph.add_node(("B",), simplex=fake_simplex_B)
+        fake_inclusion_graph.add_edge(("A",), ("B",), weight=0.5)
+        finite_nodes_per_union = 4
+        result = setup_utils.create_full_poset_graph(
+            fake_inclusion_graph, finite_nodes_per_union=finite_nodes_per_union
         )
-        fake_inclusion_graph.nodes[("A",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A",)]["simplex"].insert([0, 1], 1.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("B",)]["simplex"].insert([0, 1], 2.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"] = gudhi.SimplexTree()
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([1], 0.0)
-        fake_inclusion_graph.nodes[("A", "B")]["simplex"].insert([0, 1], 3.0)
-        result = setup_utils.create_full_poset_graph(fake_inclusion_graph)
-        mock_result_weights = {
-            (("A", 0.0), ("A", 0.5)): {"weight": 0.5},
-            (("A", 0.5), ("A", 1.0)): {"weight": 0.5},
-            (("A", 1.0), ("A", 1.5)): {"weight": 0.5},
-            (("A", 1.5), ("A", 3.0)): {"weight": 1.5},
-            (("A", 3.0), ("A", np.inf)): {"weight": np.inf},
-            (("B", 0.0), ("B", 1.0)): {"weight": 1.0},
-            (("B", 1.0), ("B", 1.5)): {"weight": 0.5},
-            (("B", 1.5), ("B", 2.0)): {"weight": 0.5},
-            (("B", 2.0), ("B", 3.0)): {"weight": 1.0},
-            (("B", 3.0), ("B", np.inf)): {"weight": np.inf},
-            (("A", "B", 0.0), ("A", "B", 0.5)): {"weight": 0.5},
-            (("A", "B", 0.5), ("A", "B", 1.0)): {"weight": 0.5},
-            (("A", "B", 1.0), ("A", "B", 1.5)): {"weight": 0.5},
-            (("A", "B", 1.5), ("A", "B", 2.0)): {"weight": 0.5},
-            (("A", "B", 2.0), ("A", "B", 3.0)): {"weight": 1.0},
-            (("A", "B", 3.0), ("A", "B", np.inf)): {"weight": np.inf},
-            (("A", 0.0), ("A", "B", 0.0)): {"weight": 0.5},
-            (("A", 0.5), ("A", "B", 0.5)): {"weight": 0.5},
-            (("A", 1.0), ("A", "B", 1.0)): {"weight": 0.5},
-            (("A", 1.5), ("A", "B", 1.5)): {"weight": 0.5},
-            (("A", 3.0), ("A", "B", 3.0)): {"weight": 0.5},
-            (("A", np.inf), ("A", "B", np.inf)): {"weight": 0.5},
-            (("B", 0.0), ("A", "B", 0.0)): {"weight": 1.5},
-            (("B", 1.0), ("A", "B", 1.0)): {"weight": 1.5},
-            (("B", 1.5), ("A", "B", 1.5)): {"weight": 1.5},
-            (("B", 2.0), ("A", "B", 2.0)): {"weight": 1.5},
-            (("B", 3.0), ("A", "B", 3.0)): {"weight": 1.5},
-            (("B", np.inf), ("A", "B", np.inf)): {"weight": 1.5},
+        mock_result_edges = {
+            (("A", -np.inf), ("A", 0.0)): np.inf,
+            (("A", 0.0), ("A", 1.0)): 1.0,
+            (("A", 1.0), ("A", 2.0)): 1.0,
+            (("A", 2.0), ("A", 3.0)): 1.0,
+            (("A", 3.0), ("A", np.inf)): np.inf,
+            (("B", -np.inf), ("B", 0.0)): np.inf,
+            (("B", 0.0), ("B", 1.0)): 1.0,
+            (("B", 1.0), ("B", 2.0)): 1.0,
+            (("B", 2.0), ("B", 3.0)): 1.0,
+            (("B", 3.0), ("B", np.inf)): np.inf,
+            (("A", -np.inf), ("B", -np.inf)): 0.5,
+            (("A", 0.0), ("B", 0.0)): 0.5,
+            (("A", 1.0), ("B", 1.0)): 0.5,
+            (("A", 2.0), ("B", 2.0)): 0.5,
+            (("A", 3.0), ("B", 3.0)): 0.5,
+            (("A", np.inf), ("B", np.inf)): 0.5,
         }
-        self.assertDictEqual(dict(result.edges), mock_result_weights)
+        for key, value in mock_result_edges.items():
+            with self.subTest(edge=key):
+                self.assertEqual(result.edges[key]["weight"], value)

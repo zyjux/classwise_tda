@@ -44,7 +44,7 @@ poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_pose
     path_landscape_resolution=1000,
 )
 
-landscape_array = poset_landscapes.discretize_poset_graph_landscapes(poset_graph, 100)
+landscape_array = poset_landscapes.create_poset_landscape_array(poset_graph, 100)
 
 F, ax = visualization.plot_all_landscapes(landscape_array, grid_layout=(3, 1))
 
