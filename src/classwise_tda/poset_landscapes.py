@@ -1,5 +1,8 @@
 """Compute generalized persistence landscapes on poset persistence modules"""
 
+import concurrent.futures
+import functools
+import time
 from operator import itemgetter
 from typing import Any, Optional, Union
 
@@ -164,6 +167,54 @@ def compute_complex_from_graph_path(
     )
 
 
+def landscape_for_one_path(
+    path: list[setup_utils.POSET_NODE_TYPE],
+    poset_graph: nx.DiGraph,
+    inclusion_graph: nx.DiGraph,
+    homology_coeff_field: int,
+    max_dim: int,
+    landscape_resolution: int,
+    num_landscapes: int,
+) -> dict[str, Any]:
+    """Helper function to compute the landscape for a given path"""
+    # Create the path complex; the paths are computed from sink to source, so we reverse
+    path_complex, list_of_steps, list_of_step_weights = compute_complex_from_graph_path(
+        path[::-1], poset_graph, inclusion_graph
+    )
+    max_filtration_value = list(path_complex.get_filtration())[-1][-1]
+    path_complex.compute_persistence(homology_coeff_field=homology_coeff_field)
+    path_diagrams = [
+        path_complex.persistence_intervals_in_dimension(i) for i in range(max_dim + 1)
+    ]
+    # Fix persistence for elements created right after a step
+    for diagram in path_diagrams:
+        for step_num in range(len(list_of_steps)):
+            adjusted_end_step_filt_value = sum(
+                list_of_steps[: step_num + 1] + list_of_step_weights[: step_num + 1]
+            )
+            indices_to_be_corrected = np.nonzero(
+                np.isclose(diagram[:, 0], adjusted_end_step_filt_value)
+            )
+            np.subtract.at(
+                diagram[:, 0],
+                indices_to_be_corrected,
+                list_of_step_weights[step_num],
+            )
+    # Truncate infinite value at max filtration value
+    path_diagrams[0][-1, 1] = max_filtration_value
+    lscape = greps.Landscape(
+        num_landscapes=num_landscapes,
+        resolution=landscape_resolution,
+        keep_endpoints=True,
+    )
+    lscape.fit(path_diagrams)
+    landscapes = lscape.transform(path_diagrams)
+    landscapes = landscapes.reshape(
+        (max_dim + 1, num_landscapes, landscape_resolution), order="C"
+    )
+    return {"landscapes": landscapes, "grid": lscape.grid_}  # type: ignore
+
+
 def landscapes_for_all_paths(
     poset_graph: nx.DiGraph,
     inclusion_graph: nx.DiGraph,
@@ -171,6 +222,7 @@ def landscapes_for_all_paths(
     max_dim: int = -1,
     num_landscapes: int = 5,
     landscape_resolution: int = 100,
+    multiprocessing_workers: Optional[int] = None,
 ) -> dict[tuple[setup_utils.POSET_NODE_TYPE, ...], dict[str, Any]]:
     """Find all paths through poset graph and compute their one-dimensional landscapes
 
@@ -204,6 +256,11 @@ def landscapes_for_all_paths(
     landscape_resolution : int
     How many samples to take across the filtration value range, affecting how finely the
     landscape is discretized. Default is 100.
+
+    multiprocessing_workers : int or None
+    How many multiprocessing workers to use. If set to None, will use as many cores as
+    are available, and if set to 0 or a negative number, will not use multiprocessing at
+    all.
 
     Returns
     ---
@@ -249,47 +306,33 @@ def landscapes_for_all_paths(
     )
 
     # Compute simplicial complexes and landscapes for all paths
-    landscape_path_dict = dict()
-    for path in tqdm(path_set):
-        path_complex, list_of_steps, list_of_step_weights = (
-            compute_complex_from_graph_path(path[::-1], poset_graph, inclusion_graph)
-        )
-        max_filtration_value = list(path_complex.get_filtration())[-1][-1]
-        path_complex.compute_persistence(homology_coeff_field=homology_coeff_field)
-        path_diagrams = [
-            path_complex.persistence_intervals_in_dimension(i)
-            for i in range(max_dim + 1)
-        ]
-        # Fix persistence for elements created right after a step
-        for diagram in path_diagrams:
-            for step_num in range(len(list_of_steps)):
-                adjusted_end_step_filt_value = sum(
-                    list_of_steps[: step_num + 1] + list_of_step_weights[: step_num + 1]
-                )
-                indices_to_be_corrected = np.nonzero(
-                    np.isclose(diagram[:, 0], adjusted_end_step_filt_value)
-                )
-                np.subtract.at(
-                    diagram[:, 0],
-                    indices_to_be_corrected,
-                    list_of_step_weights[step_num],
-                )
-        # Truncate infinite value at max filtration value
-        path_diagrams[0][-1, 1] = max_filtration_value
-        lscape = greps.Landscape(
-            num_landscapes=num_landscapes,
-            resolution=landscape_resolution,
-            keep_endpoints=True,
-        )
-        lscape.fit(path_diagrams)
-        landscapes = lscape.transform(path_diagrams)
-        landscapes = landscapes.reshape(
-            (max_dim + 1, num_landscapes, landscape_resolution), order="C"
-        )
-        landscape_path_dict[tuple(path[::-1])] = {
-            "landscapes": landscapes,
-            "grid": lscape.grid_,  # type: ignore
+    path_landscape_partial_function = functools.partial(
+        landscape_for_one_path,
+        poset_graph=poset_graph,
+        inclusion_graph=inclusion_graph,
+        homology_coeff_field=homology_coeff_field,
+        max_dim=max_dim,
+        landscape_resolution=landscape_resolution,
+        num_landscapes=num_landscapes,
+    )
+    start_time = time.time()
+    if multiprocessing_workers is None or multiprocessing_workers > 0:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=multiprocessing_workers
+        ) as exec:
+            landscape_path_dict = {
+                tuple(path[::-1]): exec.submit(path_landscape_partial_function, path)
+                for path in path_set
+            }
+            landscape_path_dict = {
+                key: value.result() for (key, value) in landscape_path_dict.items()
+            }
+    else:
+        landscape_path_dict = {
+            tuple(path[::-1]): path_landscape_partial_function(path)
+            for path in path_set
         }
+    print(f"Computing path landscapes took {time.time() - start_time:.3f} seconds.")
     return landscape_path_dict
 
 
@@ -397,6 +440,7 @@ def compute_classwise_landscape_poset(
     output_landscape_resolution: int = 100,
     path_landscape_resolution: int = 100,
     return_inclusion_graph: bool = False,
+    multiprocessing_workers: Optional[int] = None,
 ) -> Union[nx.DiGraph, tuple[nx.DiGraph, nx.DiGraph]]:
     """High-level routine that creates a poset graph with landscape values at every node
 
@@ -448,6 +492,11 @@ def compute_classwise_landscape_poset(
     return_inclusion_graph : bool
     Whether to return the inclusion graph as well as the full poset graph.
 
+    multiprocessing : int or None
+    How many multiprocessing workers to use. If set to None, will use as many cores as
+    are available, and if set to 0 or a negative number, will not use multiprocessing at
+    all.
+
     Returns
     ---
     networkx.DiGraph : Weighted directed graph representing the poset persistence
@@ -481,6 +530,7 @@ def compute_classwise_landscape_poset(
         max_dim=landscape_max_dim,
         num_landscapes=num_landscapes,
         landscape_resolution=path_landscape_resolution,
+        multiprocessing_workers=multiprocessing_workers,
     )
     poset_graph = add_landscape_values_to_poset_graph(poset_graph, landscape_dict)
     if return_inclusion_graph:

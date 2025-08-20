@@ -4,7 +4,7 @@ import xarray as xr
 
 from classwise_tda import poset_landscapes, visualization
 
-SAMPLING_RATIO = 2
+SAMPLING_RATIO = 4
 
 ds = xr.open_dataset("~/classwise_tda/data/half_rings_synth_dataset.nc")
 
@@ -31,6 +31,7 @@ poset_graph, inclusion_graph = poset_landscapes.compute_classwise_landscape_pose
     return_inclusion_graph=True,
     output_landscape_resolution=98,
     path_landscape_resolution=1000,
+    multiprocessing_workers=8,
 )
 
 landscape_array = poset_landscapes.create_poset_landscape_array(poset_graph)
