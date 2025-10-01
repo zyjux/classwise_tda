@@ -1,5 +1,6 @@
 """Utilities to set up data structures"""
 
+from collections.abc import Callable
 from itertools import chain, combinations
 from typing import Optional, Unpack
 
@@ -15,6 +16,61 @@ def powerset(iterable) -> chain:
     """Helper function that returns powerset of input (without emptyset)"""
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
+
+
+def directed_diameter_computation(
+    distance_matrix: np.ndarray,
+    class_slices: dict[str, slice],
+    node_1: tuple[str, ...],
+    node_2: tuple[str, ...],
+) -> float:
+    """Helper function that computes directed diameter of the union of two node sets"""
+    class_distances = distance_matrix.copy()
+    classes = list(class_slices.keys())
+    node_1_missing_classes = [a for a in classes if a not in node_1]
+    node_2_missing_classes = [a for a in classes if a not in node_2]
+    for node_1_missing_class in node_1_missing_classes:
+        class_distances[class_slices[node_1_missing_class], :] = np.inf
+    for node_2_missing_class in node_2_missing_classes:
+        class_distances[:, class_slices[node_2_missing_class]] = np.inf
+    return np.max(class_distances[np.isfinite(class_distances)])
+
+
+def union_diameter_computation(
+    distance_matrix: np.ndarray,
+    class_slices: dict[str, slice],
+    node_1: tuple[str, ...],
+    node_2: tuple[str, ...],
+) -> float:
+    """Helper function that computes the union diameter of the union of two node sets"""
+    class_distances = distance_matrix.copy()
+    classes = list(class_slices.keys())
+    missing_classes = [a for a in classes if (a not in node_1 and a not in node_2)]
+    for missing_class in missing_classes:
+        class_distances[class_slices[missing_class], :] = np.inf
+        class_distances[:, class_slices[missing_class]] = np.inf
+    return np.max(class_distances[np.isfinite(class_distances)])
+
+
+def compute_class_distances(
+    data_points: np.ndarray,
+    class_slices: dict[str, slice],
+    distance_function: Callable[
+        [np.ndarray, dict[str, slice], tuple[str, ...], tuple[str, ...]], float
+    ] = union_diameter_computation,
+) -> dict[tuple[tuple[str, ...], tuple[str, ...]], float]:
+    """Function to compute diameter distances between each class combination"""
+    classes = list(class_slices.keys())
+    nodes = list(powerset(classes))
+    distance_matrix = cdist(data_points, data_points)
+    out_dict = {}
+    for node_1 in nodes:
+        for node_2 in nodes:
+            if len(node_1) == (len(node_2) - 1) and set(node_1) <= set(node_2):
+                out_dict[(node_1, node_2)] = distance_function(
+                    distance_matrix, class_slices, node_1, node_2
+                )
+    return out_dict
 
 
 def create_inclusion_graph(
