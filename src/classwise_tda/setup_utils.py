@@ -7,7 +7,7 @@ from typing import Optional, Unpack
 import gudhi
 import networkx as nx
 import numpy as np
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cdist, directed_hausdorff
 
 POSET_NODE_TYPE = tuple[Unpack[tuple[str, ...]], float]
 
@@ -19,6 +19,7 @@ def powerset(iterable) -> chain:
 
 
 def directed_diameter_computation(
+    class_points: tuple[np.ndarray, np.ndarray],
     distance_matrix: np.ndarray,
     class_slices: dict[str, slice],
     node_1: tuple[str, ...],
@@ -37,6 +38,7 @@ def directed_diameter_computation(
 
 
 def union_diameter_computation(
+    class_points: tuple[np.ndarray, np.ndarray],
     distance_matrix: np.ndarray,
     class_slices: dict[str, slice],
     node_1: tuple[str, ...],
@@ -52,12 +54,33 @@ def union_diameter_computation(
     return np.max(class_distances[np.isfinite(class_distances)])
 
 
+def hausdorff_distance_computation(
+    class_points: tuple[np.ndarray, np.ndarray],
+    distance_matrix: np.ndarray,
+    class_slices: dict[str, slice],
+    node_1: tuple[str, ...],
+    node_2: tuple[str, ...],
+) -> float:
+    """Helper function that computes the Hausdorff distance between the two classes"""
+    forward_dist, _, _ = directed_hausdorff(class_points[0], class_points[1])
+    backward_dist, _, _ = directed_hausdorff(class_points[1], class_points[0])
+    return max([forward_dist, backward_dist])
+
+
 def compute_class_distances(
     data_points: np.ndarray,
     class_slices: dict[str, slice],
     distance_function: Callable[
-        [np.ndarray, dict[str, slice], tuple[str, ...], tuple[str, ...]], float
+        [
+            tuple[np.ndarray, np.ndarray],
+            np.ndarray,
+            dict[str, slice],
+            tuple[str, ...],
+            tuple[str, ...],
+        ],
+        float,
     ] = union_diameter_computation,
+    distance_scale: float = 0.5,
 ) -> dict[tuple[tuple[str, ...], tuple[str, ...]], float]:
     """Function to compute diameter distances between each class combination"""
     classes = list(class_slices.keys())
@@ -67,8 +90,18 @@ def compute_class_distances(
     for node_1 in nodes:
         for node_2 in nodes:
             if len(node_1) == (len(node_2) - 1) and set(node_1) <= set(node_2):
-                out_dict[(node_1, node_2)] = distance_function(
-                    distance_matrix, class_slices, node_1, node_2
+                class_1_points = np.concat(
+                    [data_points[sl, :] for sl in class_slices[node_1]], axis=0
+                )
+                class_2_points = np.concat(
+                    [data_points[sl, :] for sl in class_slices[node_2]], axis=0
+                )
+                out_dict[(node_1, node_2)] = distance_scale * distance_function(
+                    (class_1_points, class_2_points),
+                    distance_matrix,
+                    class_slices,
+                    node_1,
+                    node_2,
                 )
     return out_dict
 
