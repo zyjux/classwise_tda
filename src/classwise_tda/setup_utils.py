@@ -91,10 +91,10 @@ def compute_class_distances(
         for node_2 in nodes:
             if len(node_1) == (len(node_2) - 1) and set(node_1) <= set(node_2):
                 class_1_points = np.concat(
-                    [data_points[sl, :] for sl in class_slices[node_1]], axis=0
+                    [data_points[class_slices[c], :] for c in node_1], axis=0
                 )
                 class_2_points = np.concat(
-                    [data_points[sl, :] for sl in class_slices[node_2]], axis=0
+                    [data_points[class_slices[c], :] for c in node_2], axis=0
                 )
                 out_dict[(node_1, node_2)] = distance_scale * distance_function(
                     (class_1_points, class_2_points),

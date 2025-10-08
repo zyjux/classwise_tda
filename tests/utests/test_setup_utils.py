@@ -76,64 +76,76 @@ class Test_powerset(unittest.TestCase):
 
 class Test_directed_diameter_computation(unittest.TestCase):
     def test_NoMissingClasses_MaxOfDistanceMatrix(self):
+        fake_points_1 = np.zeros((3, 3))
+        fake_points = (fake_points_1, fake_points_1)
         distance_matrix = np.ones((3, 3), dtype=np.float16)
         class_slices = {"A": slice(0, 3)}
         node_1 = ("A",)
         node_2 = ("A",)
         result = setup_utils.directed_diameter_computation(
-            distance_matrix, class_slices, node_1, node_2
+            fake_points, distance_matrix, class_slices, node_1, node_2
         )
         self.assertEqual(result, 1.0)
 
     def test_SameMissingClass_MaxOfSymmetricRegion(self):
+        fake_points_1 = np.zeros((3, 3))
+        fake_points = (fake_points_1, fake_points_1)
         distance_matrix = np.array(range(9), dtype=np.float16).reshape((3, 3))
         class_slices = {"A": slice(0, 1), "B": slice(1, 3)}
         node_1 = ("A",)
         node_2 = ("A",)
         result = setup_utils.directed_diameter_computation(
-            distance_matrix, class_slices, node_1, node_2
+            fake_points, distance_matrix, class_slices, node_1, node_2
         )
         self.assertEqual(result, 0.0)
 
     def test_DifferentMissingClasses_MaxOfAsymRegion(self):
+        fake_points_1 = np.zeros((3, 3))
+        fake_points = (fake_points_1, fake_points_1)
         distance_matrix = np.array(range(9), dtype=np.float16).reshape((3, 3))
         class_slices = {"A": slice(0, 1), "B": slice(1, 3)}
         node_1 = ("A",)
         node_2 = ("A", "B")
         result = setup_utils.directed_diameter_computation(
-            distance_matrix, class_slices, node_1, node_2
+            fake_points, distance_matrix, class_slices, node_1, node_2
         )
         self.assertEqual(result, 2.0)
 
 
 class Test_union_diameter_computation(unittest.TestCase):
     def test_NoMissingClasses_MaxOfDistanceMatrix(self):
+        fake_points_1 = np.zeros((3, 3))
+        fake_points = (fake_points_1, fake_points_1)
         distance_matrix = np.ones((3, 3), dtype=np.float16)
         class_slices = {"A": slice(0, 3)}
         node_1 = ("A",)
         node_2 = ("A",)
         result = setup_utils.union_diameter_computation(
-            distance_matrix, class_slices, node_1, node_2
+            fake_points, distance_matrix, class_slices, node_1, node_2
         )
         self.assertEqual(result, 1.0)
 
     def test_SameMissingClass_MaxOfSymmetricRegion(self):
+        fake_points_1 = np.zeros((3, 3))
+        fake_points = (fake_points_1, fake_points_1)
         distance_matrix = np.array(range(9), dtype=np.float16).reshape((3, 3))
         class_slices = {"A": slice(0, 1), "B": slice(1, 3)}
         node_1 = ("A",)
         node_2 = ("A",)
         result = setup_utils.union_diameter_computation(
-            distance_matrix, class_slices, node_1, node_2
+            fake_points, distance_matrix, class_slices, node_1, node_2
         )
         self.assertEqual(result, 0.0)
 
     def test_DifferentMissingClasses_MaxOfAsymRegion(self):
+        fake_points_1 = np.zeros((3, 3))
+        fake_points = (fake_points_1, fake_points_1)
         distance_matrix = np.array(range(9), dtype=np.float16).reshape((3, 3))
         class_slices = {"A": slice(0, 1), "B": slice(1, 3)}
         node_1 = ("A",)
         node_2 = ("A", "B")
         result = setup_utils.union_diameter_computation(
-            distance_matrix, class_slices, node_1, node_2
+            fake_points, distance_matrix, class_slices, node_1, node_2
         )
         self.assertEqual(result, 8.0)
 
@@ -154,13 +166,31 @@ class Test_compute_class_distances(unittest.TestCase):
     def test_TwoClasses_TwoEntryDictSameWeights(self):
         data_points = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float32)
         class_slices = {"A": slice(0, 2), "B": slice(2, 4)}
-        result = setup_utils.compute_class_distances(data_points, class_slices)
+        result = setup_utils.compute_class_distances(
+            data_points, class_slices, distance_scale=1.0
+        )
         with self.subTest("A -> A U B"):
             key = (("A",), ("A", "B"))
             self.assertAlmostEqual(result[key], np.sqrt(2))
         with self.subTest("B -> A U B"):
             key = (("B",), ("A", "B"))
             self.assertAlmostEqual(result[key], np.sqrt(2))
+
+    def test_TwoClassesHausdorffDist_TwoEntryDictBoth1(self):
+        data_points = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float32)
+        class_slices = {"A": slice(0, 2), "B": slice(2, 4)}
+        result = setup_utils.compute_class_distances(
+            data_points,
+            class_slices,
+            distance_function=setup_utils.hausdorff_distance_computation,
+            distance_scale=1.0,
+        )
+        with self.subTest("A -> A U B"):
+            key = (("A",), ("A", "B"))
+            self.assertAlmostEqual(result[key], 1.0)
+        with self.subTest("B -> A U B"):
+            key = (("B",), ("A", "B"))
+            self.assertAlmostEqual(result[key], 1.0)
 
 
 class Test_create_inclusion_graph(unittest.TestCase):
