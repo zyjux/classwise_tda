@@ -1,0 +1,184 @@
+Starting process
+Loading data
+Computing class weights
+Starting classwise landscape computations
+Computing path landscapes took 209.882 seconds.
+Computed generalized landscape 0 vs 1 in 213.871 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.057 seconds
+Computing path landscapes took 218.063 seconds.
+Computed generalized landscape 0 vs 2 in 222.227 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.254 seconds
+Computing path landscapes took 219.452 seconds.
+Computed generalized landscape 0 vs 3 in 223.731 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.396 seconds
+Computing path landscapes took 217.336 seconds.
+Computed generalized landscape 0 vs 4 in 221.915 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.295 seconds
+Computing path landscapes took 226.670 seconds.
+Computed generalized landscape 0 vs 5 in 231.140 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.152 seconds
+Computing path landscapes took 213.921 seconds.
+Computed generalized landscape 0 vs 6 in 218.372 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.449 seconds
+Computing path landscapes took 241.347 seconds.
+Computed generalized landscape 0 vs 7 in 247.202 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.547 seconds
+Computing path landscapes took 245.456 seconds.
+Computed generalized landscape 0 vs 8 in 250.805 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.349 seconds
+Computing path landscapes took 243.082 seconds.
+Computed generalized landscape 0 vs 9 in 248.322 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.575 seconds
+Computing path landscapes took 258.275 seconds.
+Computed generalized landscape 1 vs 2 in 263.874 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.848 seconds
+Computing path landscapes took 259.583 seconds.
+Computed generalized landscape 1 vs 3 in 265.759 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.750 seconds
+Computing path landscapes took 259.272 seconds.
+Computed generalized landscape 1 vs 4 in 265.181 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.409 seconds
+Computing path landscapes took 254.662 seconds.
+Computed generalized landscape 1 vs 5 in 260.483 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.043 seconds
+Computing path landscapes took 228.474 seconds.
+Computed generalized landscape 1 vs 6 in 233.620 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.600 seconds
+Computing path landscapes took 228.307 seconds.
+Computed generalized landscape 1 vs 7 in 232.892 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.279 seconds
+Computing path landscapes took 231.554 seconds.
+Computed generalized landscape 1 vs 8 in 236.119 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.515 seconds
+Computing path landscapes took 244.253 seconds.
+Computed generalized landscape 1 vs 9 in 249.446 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.460 seconds
+Computing path landscapes took 243.517 seconds.
+Computed generalized landscape 2 vs 3 in 248.906 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.467 seconds
+Computing path landscapes took 241.798 seconds.
+Computed generalized landscape 2 vs 4 in 247.042 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.377 seconds
+Computing path landscapes took 257.467 seconds.
+Computed generalized landscape 2 vs 5 in 264.160 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.052 seconds
+Computing path landscapes took 251.445 seconds.
+Computed generalized landscape 2 vs 6 in 256.911 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.233 seconds
+Computing path landscapes took 257.906 seconds.
+Computed generalized landscape 2 vs 7 in 263.079 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.416 seconds
+Computing path landscapes took 247.525 seconds.
+Computed generalized landscape 2 vs 8 in 253.192 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.901 seconds
+Computing path landscapes took 262.301 seconds.
+Computed generalized landscape 2 vs 9 in 268.328 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.734 seconds
+Computing path landscapes took 266.299 seconds.
+Computed generalized landscape 3 vs 4 in 271.998 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.034 seconds
+Computing path landscapes took 299.831 seconds.
+Computed generalized landscape 3 vs 5 in 305.969 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.386 seconds
+Computing path landscapes took 259.172 seconds.
+Computed generalized landscape 3 vs 6 in 264.539 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.179 seconds
+Computing path landscapes took 247.105 seconds.
+Computed generalized landscape 3 vs 7 in 252.570 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.952 seconds
+Computing path landscapes took 254.282 seconds.
+Computed generalized landscape 3 vs 8 in 259.619 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.264 seconds
+Computing path landscapes took 254.330 seconds.
+Computed generalized landscape 3 vs 9 in 259.676 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.925 seconds
+Computing path landscapes took 265.149 seconds.
+Computed generalized landscape 4 vs 5 in 270.955 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.042 seconds
+Computing path landscapes took 247.748 seconds.
+Computed generalized landscape 4 vs 6 in 253.115 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.351 seconds
+Computing path landscapes took 260.211 seconds.
+Computed generalized landscape 4 vs 7 in 266.208 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.293 seconds
+Computing path landscapes took 255.072 seconds.
+Computed generalized landscape 4 vs 8 in 260.634 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.748 seconds
+Computing path landscapes took 237.724 seconds.
+Computed generalized landscape 4 vs 9 in 242.762 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.269 seconds
+Computing path landscapes took 248.567 seconds.
+Computed generalized landscape 5 vs 6 in 253.654 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.322 seconds
+Computing path landscapes took 256.574 seconds.
+Computed generalized landscape 5 vs 7 in 262.276 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.560 seconds
+Computing path landscapes took 248.518 seconds.
+Computed generalized landscape 5 vs 8 in 254.932 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.598 seconds
+Computing path landscapes took 235.615 seconds.
+Computed generalized landscape 5 vs 9 in 241.244 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.106 seconds
+Computing path landscapes took 246.996 seconds.
+Computed generalized landscape 6 vs 7 in 252.801 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.066 seconds
+Computing path landscapes took 248.873 seconds.
+Computed generalized landscape 6 vs 8 in 253.855 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.601 seconds
+Computing path landscapes took 241.139 seconds.
+Computed generalized landscape 6 vs 9 in 246.444 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.372 seconds
+Computing path landscapes took 257.307 seconds.
+Computed generalized landscape 7 vs 8 in 262.935 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.552 seconds
+Computing path landscapes took 247.847 seconds.
+Computed generalized landscape 7 vs 9 in 253.183 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 5.131 seconds
+Computing path landscapes took 235.824 seconds.
+Computed generalized landscape 8 vs 9 in 240.770 seconds
+Starting to compute difference from non-classified landscape
+Computed standard landscape and mse in 4.784 seconds
