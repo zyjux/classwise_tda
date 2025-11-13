@@ -2,6 +2,7 @@
 
 import concurrent.futures
 import functools
+import multiprocessing
 import time
 from operator import itemgetter
 from typing import Any, Optional, Union
@@ -11,7 +12,6 @@ import gudhi.representations as greps
 import networkx as nx
 import numpy as np
 import xarray as xr
-from tqdm import tqdm
 
 from . import setup_utils
 
@@ -317,15 +317,20 @@ def landscapes_for_all_paths(
     )
     start_time = time.time()
     if multiprocessing_workers is None or multiprocessing_workers > 0:
+        if multiprocessing_workers is None:
+            workers = multiprocessing.cpu_count()
+        else:
+            workers = multiprocessing_workers
+        paths_per_worker = max(len(path_set) // workers, 1)
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=multiprocessing_workers
         ) as exec:
+            path_landscapes = exec.map(
+                path_landscape_partial_function, path_set, chunksize=paths_per_worker
+            )
             landscape_path_dict = {
-                tuple(path[::-1]): exec.submit(path_landscape_partial_function, path)
-                for path in path_set
-            }
-            landscape_path_dict = {
-                key: value.result() for (key, value) in landscape_path_dict.items()
+                tuple(path[::-1]): landscape
+                for path, landscape in zip(path_set, path_landscapes)
             }
     else:
         landscape_path_dict = {
@@ -405,6 +410,7 @@ def find_node_landscape_value(
 def add_landscape_values_to_poset_graph(
     poset_graph: nx.DiGraph,
     path_dict: dict[tuple[setup_utils.POSET_NODE_TYPE, ...], dict[str, np.ndarray]],
+    multiprocessing_workers: Optional[int] = None,
 ) -> nx.DiGraph:
     """Return graph with landscape values added to nodes
 
@@ -422,10 +428,28 @@ def add_landscape_values_to_poset_graph(
     networkx.DiGraph : A copy of poset_graph with the generalized landscape values added
     under the "landscape_vals" key at each node.
     """
-    for node in poset_graph:
-        poset_graph.nodes[node]["landscape_values"] = find_node_landscape_value(
-            node, path_dict, poset_graph
+    if multiprocessing_workers is None or multiprocessing_workers > 0:
+        if multiprocessing_workers is None:
+            workers = multiprocessing.cpu_count()
+        else:
+            workers = multiprocessing_workers
+        nodes_per_worker = max(poset_graph.number_of_nodes() // workers, 1)
+        temp_func = functools.partial(
+            find_node_landscape_value, path_dict=path_dict, poset_graph=poset_graph
         )
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=multiprocessing_workers
+        ) as exec:
+            landscape_vals = exec.map(
+                temp_func, poset_graph.nodes, chunksize=nodes_per_worker
+            )
+        for node, landscape_val in zip(poset_graph.nodes, landscape_vals):
+            poset_graph.nodes[node]["landscape_values"] = landscape_val
+    else:
+        for node in poset_graph:
+            poset_graph.nodes[node]["landscape_values"] = find_node_landscape_value(
+                node, path_dict, poset_graph
+            )
     return poset_graph
 
 
@@ -492,7 +516,7 @@ def compute_classwise_landscape_poset(
     return_inclusion_graph : bool
     Whether to return the inclusion graph as well as the full poset graph.
 
-    multiprocessing : int or None
+    multiprocessing_workers : int or None
     How many multiprocessing workers to use. If set to None, will use as many cores as
     are available, and if set to 0 or a negative number, will not use multiprocessing at
     all.
@@ -532,7 +556,9 @@ def compute_classwise_landscape_poset(
         landscape_resolution=path_landscape_resolution,
         multiprocessing_workers=multiprocessing_workers,
     )
-    poset_graph = add_landscape_values_to_poset_graph(poset_graph, landscape_dict)
+    poset_graph = add_landscape_values_to_poset_graph(
+        poset_graph, landscape_dict, multiprocessing_workers=multiprocessing_workers
+    )
     if return_inclusion_graph:
         return poset_graph, inclusion_graph
     else:
